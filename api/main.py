@@ -144,6 +144,17 @@ async def api_run(payload: dict):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/run-all")
+async def api_run_all(payload: dict | None = None):
+    """Run the daily pipeline for all configured personas in one request."""
+    try:
+        return await _invoke_agent(payload or {}, route="/run-all")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=str(e.response.text))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # On-demand LLM path for the escalate endpoint: this service needs its own
 # governance-wrapped client, separate from the batch pipeline's.
 def _build_llm_client():
@@ -181,7 +192,7 @@ def _build_governance_stores():
     return None, None
 
 
-async def _invoke_agent(payload: dict) -> dict:
+async def _invoke_agent(payload: dict, route: str = "/run") -> dict:
     """Forward the given payload to the agent service's /run endpoint.
 
     Expects `AGENT_URL` env var to contain the full agent service URL
@@ -191,7 +202,7 @@ async def _invoke_agent(payload: dict) -> dict:
     if not agent_url:
         raise RuntimeError("AGENT_URL environment variable is not set")
 
-    url = agent_url.rstrip("/") + "/run"
+    url = agent_url.rstrip("/") + route
     async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.post(url, json=payload)
     resp.raise_for_status()

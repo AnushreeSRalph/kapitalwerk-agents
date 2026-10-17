@@ -13,7 +13,6 @@ substitutions:
   _RESEND_FROM_EMAIL: "onboarding@resend.dev"
   # Governance cache/audit persistence -- requires a Native-mode Firestore
   _GOVERNANCE_STORE: "firestore"
-  _PUBLIC_API_BASE_URL: "https://kapitalwerk-api-413901847959.us-central1.run.app"
   # Demo reset: escalated/acknowledged cases revert to "awaiting_review" after
   # this many hours. 0 disables the reset.
   _CASE_ACTION_RESET_HOURS: "6"
@@ -40,7 +39,7 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --service-account "${_CLOUD_RUN_SERVICE_ACCOUNT}" \
-          --set-env-vars "BUCKET_BACKEND=gcs,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},LLM_PROVIDER=vertex,GCP_PROJECT=$PROJECT_ID,GCP_LOCATION=${_GCP_LOCATION},CONFIG_FILE=/app/config.json,REMINDER_NOTIFIER=${_REMINDER_NOTIFIER},RESEND_FROM_EMAIL=${_RESEND_FROM_EMAIL},GOVERNANCE_STORE=${_GOVERNANCE_STORE},FIRESTORE_DATABASE=default,PUBLIC_API_BASE_URL=${_PUBLIC_API_BASE_URL}" \
+          --set-env-vars "BUCKET_BACKEND=gcs,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},LLM_PROVIDER=vertex,GCP_PROJECT=$PROJECT_ID,GCP_LOCATION=${_GCP_LOCATION},CONFIG_FILE=/app/config.json,REMINDER_NOTIFIER=${_REMINDER_NOTIFIER},RESEND_FROM_EMAIL=${_RESEND_FROM_EMAIL},GOVERNANCE_STORE=${_GOVERNANCE_STORE},FIRESTORE_DATABASE=default" \
           --set-secrets "RESEND_API_KEY=${_RESEND_SECRET_NAME},GEMINI_API_KEY=${_GEMINI_SECRET_NAME}" \
           --memory=1Gi \
           --timeout=15m
@@ -54,10 +53,15 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --service-account "${_CLOUD_RUN_SERVICE_ACCOUNT}" \
-          --set-env-vars "CONFIG_FILE=/app/config.json,LLM_PROVIDER=vertex,GCP_PROJECT=$PROJECT_ID,GCP_LOCATION=${_GCP_LOCATION},BUCKET_BACKEND=gcs,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},AGENT_URL=$${AGENT_URL},GOVERNANCE_STORE=${_GOVERNANCE_STORE},FIRESTORE_DATABASE=default,PUBLIC_API_BASE_URL=${_PUBLIC_API_BASE_URL},CASE_ACTION_RESET_HOURS=${_CASE_ACTION_RESET_HOURS}" \
+          --set-env-vars "CONFIG_FILE=/app/config.json,LLM_PROVIDER=vertex,GCP_PROJECT=$PROJECT_ID,GCP_LOCATION=${_GCP_LOCATION},BUCKET_BACKEND=gcs,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},AGENT_URL=$${AGENT_URL},GOVERNANCE_STORE=${_GOVERNANCE_STORE},FIRESTORE_DATABASE=default,CASE_ACTION_RESET_HOURS=${_CASE_ACTION_RESET_HOURS}" \
           --set-secrets "GEMINI_API_KEY=${_GEMINI_SECRET_NAME}" \
           --memory=1Gi \
           --timeout=15m
+
+        API_URL=$(gcloud run services describe kapitalwerk-api --region us-central1 --platform managed --format='value(status.url)')
+
+        gcloud run services update kapitalwerk-agent --project=$PROJECT_ID --region us-central1 --update-env-vars "PUBLIC_API_BASE_URL=$${API_URL}/api"
+        gcloud run services update kapitalwerk-api --project=$PROJECT_ID --region us-central1 --update-env-vars "PUBLIC_API_BASE_URL=$${API_URL}/api"
 
         # UI is served by the API service; no separate frontend deploy
 

@@ -567,30 +567,30 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Customer Notices Sent</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1">24 notices</div>
+          <div class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
           <span class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1">
-            <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500"></i> Weekly automated cycle
+            <i data-lucide="check" class="w-3.5 h-3.5 text-slate-400"></i> No snapshot loaded
           </span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Upcoming Payment Heads-Up</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1">18 accounts</div>
+          <div class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
           <span class="text-[11px] font-semibold text-emerald-600 mt-1 flex items-center gap-1 font-mono">
-            <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Sent Monday (T-7 cadence)
+            <i data-lucide="calendar" class="w-3.5 h-3.5"></i> No snapshot loaded
           </span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Missed-Credit Reminders</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1 text-rose-600">6 reminders</div>
+          <div class="text-2xl font-black font-mono text-slate-900 mt-1 text-slate-500">—</div>
           <span class="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 font-mono">
-            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Grace period closed Friday
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> No snapshot loaded
           </span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Treasury Ops Summary</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1 text-brand-500">1 Rollup Memo</div>
+          <div class="text-2xl font-black font-mono text-slate-900 mt-1 text-slate-500">—</div>
           <span class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1 font-mono">
-            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Sent to Internal Ops
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> No snapshot loaded
           </span>
         </div>
       </div>
@@ -622,7 +622,7 @@
             <span class="w-6 h-6 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-[10px] flex-shrink-0">N2</span>
             <div>
               <div class="text-white font-bold">Draft Upcoming Notices</div>
-              <div class="text-slate-400 mt-0.5">Identified 18 counterparties with expected remittance in next 7 days; drafted upcoming notices.</div>
+              <div class="text-slate-400 mt-0.5">No snapshot loaded; reporting activity will appear after a completed pipeline run.</div>
             </div>
           </div>
           <div class="flex items-start gap-3 bg-agentDark-800/80 p-3 rounded-xl border border-agentDark-700">
@@ -636,7 +636,7 @@
             <span class="w-6 h-6 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-[10px] flex-shrink-0">N4</span>
             <div>
               <div class="text-white font-bold">Queue Reminders with Masked Identity</div>
-              <div class="text-slate-400 mt-0.5">Drafted and queued 6 missed-credit reminder emails with PII masking preserved.</div>
+              <div class="text-slate-400 mt-0.5">No snapshot loaded; reminder activity will appear after a completed pipeline run.</div>
             </div>
           </div>
         </div>
@@ -2535,7 +2535,7 @@ class Component extends DCLogic {
       { label:'Customer emails sent', value:String(customerEmails.length), sub:'this week', subColor:'#9B9A8F' },
       { label:'Upcoming-transaction notices', value:String(upcomingCount), sub:'sent Monday', subColor:'#2F6B4F' },
       { label:'Missed-credit reminders', value:String(reminderCount), sub: reminderCount ? 'sent Friday' : 'none this week', subColor: reminderCount ? '#B3402A' : '#2F6B4F' },
-      { label:'Internal reports sent', value:'1', sub:'to Treasury Ops', subColor:'#9B9A8F' },
+      { label:'Internal reports sent', value:internalRows.length ? '1' : '0', sub:internalRows.length ? 'to Treasury Ops' : 'no snapshot', subColor:'#9B9A8F' },
     ];
 
     const reportStepsOpen = this.state.reportStepsOpen;
@@ -2905,8 +2905,12 @@ class Component extends DCLogic {
       async resolveApiBase() {
         const localDefault = window.location.protocol.startsWith('http')
           ? window.location.origin + '/api' : '/api';
+        const normalizeApiBase = (value) => {
+          const base = String(value || '').replace(/\/$/, '');
+          return base && /\/api$/i.test(base) ? base : (base ? base + '/api' : '/api');
+        };
         if (window.KWN_API_BASE) {
-          this.apiBase = window.KWN_API_BASE.replace(/\/$/, '');
+          this.apiBase = normalizeApiBase(window.KWN_API_BASE);
           return;
         }
         try {
@@ -2914,7 +2918,7 @@ class Component extends DCLogic {
           if (response.ok) {
             const config = await response.json();
             if (config.api_base_url) {
-              this.apiBase = String(config.api_base_url).replace(/\/$/, '');
+              this.apiBase = normalizeApiBase(config.api_base_url);
               return;
             }
           }
@@ -3022,11 +3026,15 @@ class Component extends DCLogic {
           document.getElementById('apiStatusBadge').innerHTML = '<i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i><span>API Connected</span>';
           document.getElementById('apiStatusBadge').className = 'flex items-center gap-1 text-emerald-400';
         } catch (err) {
-          console.warn('Backend API offline; using embedded demo data', err);
-          this.counterpartyData = this.getSeedCounterparties();
-          this.casesData = this.getSeedCases();
-          this.heatmapData = this.getSeedHeatmap();
-          document.getElementById('apiStatusBadge').innerHTML = '<i data-lucide="wifi-off" class="w-3.5 h-3.5"></i><span>Demo Mode (Offline)</span>';
+          // Never show the hospital seed ledger for another customer. That
+          // made an API failure look like valid cross-customer data. Keep the
+          // selected persona empty and show the connection error instead.
+          console.warn('Backend API unavailable for ' + persona, err);
+          this.counterpartyData = [];
+          this.casesData = [];
+          this.heatmapData = [];
+          this.dashboardData = null;
+          document.getElementById('apiStatusBadge').innerHTML = '<i data-lucide="wifi-off" class="w-3.5 h-3.5"></i><span>API Unavailable</span>';
           document.getElementById('apiStatusBadge').className = 'flex items-center gap-1 text-amber-400';
           document.getElementById('tenantTitle').textContent = currentMeta.name;
           document.getElementById('tenantSectorBadge').textContent = currentMeta.sector;

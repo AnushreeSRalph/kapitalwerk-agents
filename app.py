@@ -428,12 +428,23 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._handle_acknowledge(persona, case_id)
             return
 
-        if self.path != "/run":
+        if self.path not in {"/run", "/run-all"}:
             self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
             return
 
 
         try:
+            if self.path == "/run-all":
+                from orchestrator.run_orchestrator import run_all_personas
+                run_all_personas(
+                    run_date=os.environ.get("RUN_DATE"),
+                    force=os.environ.get("FORCE_RUN", "").lower() in ("1", "true", "yes"),
+                    reminder_recipient_override=os.environ.get("REMINDER_RECIPIENT_OVERRIDE"),
+                    verbose=True,
+                )
+                self._send_json({"success": True, "run_all_personas": True})
+                return
+
             payload = self._read_json()
             customer_id = self._get_value(payload, "customer_id", "customerId") or "glucometer-vendor"
 
