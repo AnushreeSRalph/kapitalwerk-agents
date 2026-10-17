@@ -1,200 +1,210 @@
-# Kapitalwerk NXT
+# KapitalWerk NXT
 
-## What this project does
+KapitalWerk NXT is a governed multi-agent financial intelligence platform for SME banking. It gives relationship managers one explainable view of payment inflows, risk signals, AML review, customer engagement opportunities, and AI governance telemetry.
 
-Kapitalwerk NXT is a multi-agent transaction monitoring pipeline for SME banking use cases.
-It ingests customer transaction files, computes anomaly and risk signals, optionally runs AML narratives through an LLM with governance controls, generates reporting artifacts, and exposes everything through an API and bundled UI.
+Prepared for the Google Cloud AI Builder Cup by **Pixel Perfect**.
 
-## Core components
+## What the platform does
 
-- Ingestion agent: normalizes source CSV data and writes snapshot artifacts
-- Inflow agent: computes flags such as missing payments, deviations, and high-value transactions
-- Risk agent: derives risk tier and signals, plus PII fail-closed gating
-- AML agent: creates case narratives for escalated flags
-- Marketing agent: builds postal-code heatmap annotations
-- Reporting agent: reminder outputs, top-risk report, exports used by API/UI
-- Governance: LLM budget, caching, audit trail, provider abstraction
-- Orchestrator: LangGraph workflow wiring all nodes
-- API service: read and action endpoints plus standalone UI at /
+KapitalWerk NXT processes customer transaction snapshots through a LangGraph workflow:
 
-## End-to-end flow
+1. Ingestion normalizes transaction files and writes a dated snapshot.
+2. Inflow analysis detects missing payments, deviations, and high-value transactions.
+3. Risk analysis assigns a portfolio risk tier and applies the PII guardrail.
+4. AML analysis creates regulatory narratives for escalated cases.
+5. Reporting creates dashboard, reminder, and case artifacts.
+6. Marketing creates a data-backed postal-code opportunity heatmap.
+7. Governance records LLM calls, token usage, cache hits, latency, and fail-closed decisions.
 
-Execution order in orchestrator graph:
+The dashboard reads the newest completed snapshot for each customer and does not wait for a new daily pipeline run to finish.
 
-1. ingestion_node
-2. inflow_node
-3. risk_node
-4. Conditional branch:
-5. aml_node if escalation criteria met, else skip to reporting
-6. reporting_node
-7. marketing_node
-8. reminder_node
+## Production architecture
 
-Flow source: orchestrator/graph.py.
+~~~text
+Dashboard UI
+    |
+Cloud Run API and pipeline service
+    |
+LangGraph orchestrator
+    |
+Ingestion -> Inflow -> Risk -> AML when required
+                     |       |
+                     +-> Reporting -> Marketing -> Reminders
+    |
+GovernanceMiddleware
+    |
+Vertex AI Gemini 2.5 Flash
+    |
+Cloud Storage snapshots + Firestore cache and audit log
+~~~
 
-## Storage model
+- **Cloud Run** hosts the API/UI service and pipeline agent service.
+- **Cloud Storage** stores source data and dated pipeline artifacts.
+- **Firestore** stores the shared semantic cache and immutable governance audit records.
+- **Vertex AI Gemini 2.5 Flash** provides production LLM reasoning.
+- **Workload identity and service accounts** provide keyless cloud authentication.
 
-Per-run artifacts are stored under:
+## Local development
 
-- customer_id/run_date/normalized_transactions.json
-- customer_id/run_date/inflow_flags.json
-- customer_id/run_date/top_risk_report.json
-- customer_id/run_date/marketing_heatmap.json
-- plus related reporting and audit outputs
+Local development uses the same API and UI contracts:
 
-Bucket backend is environment-driven:
+- Transaction artifacts are read from the local bucket_output directory.
+- Ollama can provide the local model, for example llama3.
+- Local governance can use JSONL audit storage and a local cache.
+- Production uses Vertex Gemini, GCS, and Firestore.
 
-- local: LocalBucket
-- gcs: MirrorBucket (reads from GCS first, writes to both local and GCS)
+Install:
 
-## LLM and governance model
-
-- LLM provider is selected by LLM_PROVIDER
-- Supported: mock, vertex, gemini, ollama
-- Governance store is selected by GOVERNANCE_STORE
-- Supported: memory (default), firestore
-
-Only selected nodes call LLMs directly, and all LLM calls pass through GovernanceMiddleware.
-
-## Local setup
-
-Prerequisites:
-
-- Python 3.10+
-- pip
-
-Install dependencies:
-
+~~~bash
 pip install -r requirements.txt
+~~~
 
-Optional: create a .env file in repo root for local overrides.
+Run locally with Ollama:
 
-## Run the full pipeline locally
-
-Configure your LLM provider before running (choose one):
-
-```bash
-# Option 1: Fast local mock (no external credentials needed)
-export LLM_PROVIDER=mock
-
-# Option 2: Local Ollama (or set ENV=dev)
+~~~bash
 export LLM_PROVIDER=ollama
-# export OLLAMA_HOST="http://localhost:11434"
-# export OLLAMA_MODEL="llama3"
+export OLLAMA_MODEL=llama3
+export BUCKET_BACKEND=local
+export BUCKET_ROOT=./bucket_output
 
-# Option 3: Google Gemini API
-export LLM_PROVIDER=gemini
-export GEMINI_API_KEY="your-gemini-api-key"
+ollama run llama3
+uvicorn api.main:app --reload --port 8080
+~~~
 
-# Option 4: Google Cloud Vertex AI (requires GCP_PROJECT and ADC)
-export LLM_PROVIDER=vertex
-export GCP_PROJECT="your-gcp-project-id"
-```
+Open http://localhost:8080/.
 
-Run from orchestrator folder:
+Run the pipeline manually:
 
-```bash
+~~~bash
 cd orchestrator
-python3 run_orchestrator.py
-```
+RUN_ALL_PERSONAS=1 python3 run_orchestrator.py
+~~~
 
-Useful environment flags:
+Useful flags:
 
-- `RUN_ALL_PERSONAS=1` to process all personas
-- `FORCE_RUN=1` to force rerun even if snapshot exists
-- `RUN_DATE=YYYY-MM-DD` to backfill or re-run a date
-- `BUCKET_BACKEND=local` or `gcs`
-- `ENV=dev` to default provider to Ollama
+- RUN_ALL_PERSONAS=1 processes all customers.
+- FORCE_RUN=1 reruns a snapshot even when that date already exists.
+- RUN_DATE=YYYY-MM-DD runs or backfills a specific date.
+- SKIP_STARTUP_PIPELINE_RUN=1 prevents the API startup background run.
 
-## Run the API and load the UI
+## Data and snapshot selection
 
-Once pipeline artifacts are generated (or when testing with existing outputs), start the FastAPI service from the repo root:
+Each customer snapshot is stored under:
 
-```bash
-uvicorn api.main:app --reload --port 8000
-```
+~~~text
+customer_id/run_date/
+  normalized_transactions.json
+  historical_stats.json
+  inflow_flags.json
+  top_risk_report.json
+  marketing_heatmap.json
+  reminders_*.json
+~~~
 
-### Access the Web UI:
-Open your browser and navigate to:
-```
-http://localhost:8000/
-```
-The standalone dashboard loads at `/`, providing interactive views for each persona (`glucometer-vendor`, `gym-chain`, `boho-house`), transaction flags, compliance case reviews, notifications, and postal heatmaps.
+The API selects the latest complete snapshot and ignores in-progress folders. The UI keeps showing the previous valid data while a new daily run is processing.
 
-### API Endpoints:
-- `GET /` — Standalone dashboard UI
-- `GET /api/personas` — Supported business personas
-- `GET /api/{persona}/dashboard` — Aggregated dashboard state
-- `GET /api/{persona}/counterparties` — Top-10 counterparties by value
-- `GET /api/{persona}/cases` — Flagged cases awaiting review
-- `POST /api/{persona}/cases/{case_id}/acknowledge` — Acknowledge a case
-- `POST /api/{persona}/cases/{case_id}/escalate` — Re-run Risk + AML review
-- `GET /api/{persona}/marketing-heatmap` — Postal code customer heatmap
-- `GET /api/governance/audit-summary` — Governance audit rollup
+Configured customers:
 
-## Run the Cloud Run agent endpoint locally
+- glucometer-vendor
+- gym-chain
+- boho-house
 
-The root app.py exposes:
+## Production configuration
 
-- GET /health
-- POST /run
+Cloud Run must receive these environment variables:
 
-Start service:
+~~~text
+BUCKET_BACKEND=gcs
+GCS_BUCKET_NAME=kapitalwerk-nxt-gcs
+LLM_PROVIDER=vertex
+GEMINI_MODEL=gemini-2.5-flash
+GOVERNANCE_STORE=firestore
+FIRESTORE_PROJECT=hack-team-chasing-alpha
+~~~
 
-```bash
-python3 app.py
-```
+FIRESTORE_DATABASE may be omitted. The application uses Firestore's default database automatically.
 
-Example run request:
+No Gemini API key belongs in the public repository or frontend JavaScript. Vertex AI uses the Cloud Run service account and ADC.
 
-```bash
-curl -X POST "http://localhost:8080/run" \
-  -H "Content-Type: application/json" \
-  -d '{"customer_id":"glucometer-vendor","source_type":"hospital_vendor","csv_path":"../ingestion_data/hospital_vendor_2yr_history.csv"}'
-```
+The Cloud Run service account needs Vertex AI User, GCS object read/write access for the configured bucket, and Firestore read/write access. The API and agent services must use the same project, bucket, Firestore database, and governance collection settings.
 
-## Cloud deployment
+## Governance and safety
 
-cloudbuild.yaml builds and deploys two Cloud Run services:
+Every model interaction passes through GovernanceMiddleware.
 
-1. kapitalwerk-agent
-2. kapitalwerk-api
+- PII detection fails closed.
+- AML and marketing calls are blocked when upstream PII is detected.
+- Blocked decisions are still recorded.
+- Semantic cache keys use normalized prompt hashes.
+- Call and token budgets are enforced per agent.
+- Local audit storage uses immutable JSONL.
+- Production audit and cache storage use Firestore.
 
-Highlights:
+The UI exposes completed LLM calls, PII blocks, cache hit rate, per-agent token counts, latency, stop reasons, and audit trace IDs.
 
-- Agent is deployed first
-- API gets AGENT_URL from deployed agent service
-- BUCKET_BACKEND=gcs and GCS bucket name are injected via env vars
-- Optional Firestore governance backend can be enabled with GOVERNANCE_STORE=firestore
+## API endpoints
 
-Run deploy:
+- GET / — dashboard UI
+- GET /api/personas — customer metadata and latest snapshot information
+- GET /api/{persona}/dashboard — complete dashboard payload
+- GET /api/{persona}/counterparties — full counterparty ledger
+- GET /api/{persona}/cases — cases awaiting review
+- GET /api/{persona}/marketing-heatmap — persisted heatmap
+- GET /api/{persona}/reminder-preview — reminder preview
+- POST /api/{persona}/cases/{case_id}/acknowledge — acknowledge a case
+- POST /api/{persona}/cases/{case_id}/escalate — governed Risk and AML review
+- GET /api/governance/audit-summary — governance totals
+- GET /api/governance/audit-log — detailed audit events
+- POST /api/run — invoke the pipeline agent service
 
-gcloud builds submit --config cloudbuild.yaml .
+## Deployment verification
 
-## Test commands
+After deploying to Cloud Run:
 
-Run all module tests:
+~~~bash
+curl https://YOUR_CLOUD_RUN_URL/api/personas
+curl https://YOUR_CLOUD_RUN_URL/api/glucometer-vendor/dashboard
+curl https://YOUR_CLOUD_RUN_URL/api/governance/audit-summary
+~~~
 
-for d in ingestion_agent inflow_agent risk_agent aml_agent governance reporting_agent marketing_agent; do (cd "$d" && python3 -m pytest -q); done
+The dashboard should show the latest completed GCS snapshot immediately. The daily pipeline can run independently and the UI will pick up the new snapshot after completion.
 
-## Key env vars
+## Prototype benchmark
 
-- BUCKET_BACKEND: local or gcs
-- GCS_BUCKET_NAME: target GCS bucket when BUCKET_BACKEND=gcs
-- LLM_PROVIDER: mock, vertex, gemini, ollama
-- GEMINI_MODEL: model name for gemini or vertex
-- AGENT_URL: API-to-agent forwarding endpoint
-- GOVERNANCE_STORE: memory or firestore
-- FIRESTORE_PROJECT: optional explicit project for firestore backend
-- FIRESTORE_DATABASE: firestore database id, default is (default)
-- REMINDER_NOTIFIER: console or resend
-- RESEND_API_KEY: required when REMINDER_NOTIFIER=resend
+The submitted prototype deck reports:
 
-## File map
+- End-to-end pipeline run: **45–90 seconds**
+- Tokens per run: **approximately 12k–18k**
+- Repeat-run cache hit rate: **approximately 85%–95%**
+- Escalate-to-AML narrative latency: **approximately 1.2–2.5 seconds**
+- Fallback: local CSV and local cache when Cloud Storage or Firestore is unavailable
 
-- app.py: Cloud Run style run endpoint
-- orchestrator/run_orchestrator.py: local and batch orchestrator runner
-- orchestrator/graph.py: node wiring and conditional path
-- orchestrator/nodes.py: node implementations
-- api/main.py: API and UI service
-- cloudbuild.yaml: build and deploy pipeline
+These are benchmark claims from the submission deck. The live audit trail reports observed values for the current deployment and should be used for a new measured benchmark.
+
+## Tests
+
+~~~bash
+for d in ingestion_agent inflow_agent risk_agent aml_agent governance reporting_agent marketing_agent; do
+  (cd "$d" && python3 -m pytest -q)
+done
+~~~
+
+## Repository map
+
+- api/main.py — FastAPI service and dashboard hosting
+- standalone-ui.html — bundled dashboard UI
+- orchestrator/graph.py — LangGraph workflow
+- orchestrator/nodes.py — pipeline nodes and telemetry
+- orchestrator/run_orchestrator.py — local and daily batch runner
+- governance/ — provider, guardrails, cache, token metering, and audit stores
+- ingestion_agent/ — input normalization and snapshot creation
+- inflow_agent/ — rolling baseline and anomaly detection
+- risk_agent/ — risk and PII fail-closed analysis
+- aml_agent/ — regulatory narrative generation
+- marketing_agent/ — postal-code opportunity analysis
+- reporting_agent/ — exports, reminders, and dashboard data
+- config.json — non-secret project and deployment metadata
+
+## Submission links
+
+Add the final public GitHub repository, Cloud Run URL, and three-minute demo video link before submission.
