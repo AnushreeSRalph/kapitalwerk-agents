@@ -68,7 +68,7 @@ concurrent instances, which is what a real compliance audit trail
         # ADC happens to resolve.
         self.project = project or os.environ.get("FIRESTORE_PROJECT") or os.environ.get("GCP_PROJECT")
         self.collection_name = collection or os.environ.get("FIRESTORE_AUDIT_COLLECTION", "llm_audit_log")
-        self.database = database or os.environ.get("FIRESTORE_DATABASE", "(default)")
+        self.database = database or os.environ.get("FIRESTORE_DATABASE", "default")
         self._client = firestore.Client(project=self.project, database=self.database)
         self._collection = self._client.collection(self.collection_name)
         # Fail fast with an actionable message instead of a NotFound deep in

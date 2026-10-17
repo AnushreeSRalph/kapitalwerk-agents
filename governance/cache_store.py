@@ -64,7 +64,7 @@ every concurrent instance, which InMemoryCacheStore cannot do.
         # then GCP_PROJECT (set by cloudbuild.yaml), then ADC as last resort.
         self.project = project or os.environ.get("FIRESTORE_PROJECT") or os.environ.get("GCP_PROJECT")
         self.collection_name = collection or os.environ.get("FIRESTORE_CACHE_COLLECTION", "llm_cache")
-        self.database = database or os.environ.get("FIRESTORE_DATABASE", "(default)")
+        self.database = database or os.environ.get("FIRESTORE_DATABASE", "default")
         self._client = firestore.Client(project=self.project, database=self.database)
         self._collection = self._client.collection(self.collection_name)
 
