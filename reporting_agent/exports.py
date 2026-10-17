@@ -324,6 +324,8 @@ breakdown by agent and by stop_reason, and an explicit count of fail-closed
         "calls": 0, "tokens": 0, "cache_hits": 0, "completed": 0,
     })
     by_stop_reason: dict[str, int] = defaultdict(int)
+    completed_tokens_by_prompt: dict[str, int] = {}
+    token_savings = 0
     for r in records:
         agent = r.get("agent", "unknown")
         by_agent[agent] += 1
@@ -334,7 +336,16 @@ breakdown by agent and by stop_reason, and an explicit count of fail-closed
             detail["cache_hits"] += 1
         if r.get("stop_reason") == "completed":
             detail["completed"] += 1
+            prompt_hash = r.get("prompt_hash")
+            if prompt_hash:
+                completed_tokens_by_prompt.setdefault(
+                    prompt_hash,
+                    int(r.get("input_tokens") or 0) + int(r.get("output_tokens") or 0),
+                )
         by_stop_reason[r.get("stop_reason", "unknown")] += 1
+    for r in records:
+        if r.get("stop_reason") == "cache_hit":
+            token_savings += completed_tokens_by_prompt.get(r.get("prompt_hash"), 0)
     return {
         "total_events": len(records),
         "by_agent": dict(by_agent),
@@ -343,6 +354,7 @@ breakdown by agent and by stop_reason, and an explicit count of fail-closed
         "pii_blocks": by_stop_reason.get("pii_detected_blocked", 0),
         "llm_calls_completed": by_stop_reason.get("completed", 0),
         "cache_hits": by_stop_reason.get("cache_hit", 0),
+        "token_savings": token_savings,
         "cache_store": "Firestore" if os.environ.get("GOVERNANCE_STORE", "memory").lower() == "firestore" else "Local file",
         "audit_storage": "Firestore" if os.environ.get("GOVERNANCE_STORE", "memory").lower() == "firestore" else "Immutable JSONL",
     }
@@ -412,6 +424,21 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
         "overdue_capital": round(sum(float(row.get("r3") or 0) for row in overdue), 2),
         "projected_inflow": round(sum(float(row.get("r3") or 0) for row in counterparties), 2),
     }
+    reporting = {"customer_notices": 0, "upcoming_accounts": 0, "missed_reminders": 0, "rollup_memos": 0}
+    if run_date:
+        for filename, key in (
+            ("reminders_sent_monday_upcoming.json", "upcoming_accounts"),
+            ("reminders_sent_friday_missed.json", "missed_reminders"),
+        ):
+            path = _join(bucket_root, persona, run_date, filename)
+            if _exists(path):
+                reminder = _load(path) or {}
+                record = reminder.get("record") or {}
+                count = int(record.get("counterparty_count") or reminder.get("email_count") or 0)
+                reporting[key] = count
+                reporting["customer_notices"] += count
+        if reporting["customer_notices"] or counterparties:
+            reporting["rollup_memos"] = 1
     # Keep the marketing panel data-backed.  The heatmap is the persisted output
     # of the marketing agent, so it is a better source than browser-side demo
     # narratives and remains available while a new pipeline run is processing.
@@ -447,6 +474,7 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
         "persona": persona,
         "run_date": run_date,
         "metrics": metrics,
+        "reporting": reporting,
         "marketing": marketing,
         "top_counterparties": counterparties,
         "cases_awaiting_review": cases,
