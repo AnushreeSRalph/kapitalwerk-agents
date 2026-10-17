@@ -4,6 +4,7 @@ import time
 import traceback
 import re
 import sys
+from urllib.parse import urlsplit, parse_qs
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -16,6 +17,8 @@ for sibling in ("risk_agent", "aml_agent", "governance", "reporting_agent", "orc
         sys.path.insert(0, p)
 
 from orchestrator.graph import build_graph, get_agent_run_log, reset_agent_run_log
+import exports
+import contact_store
 
 CONFIG_PATH = Path(os.environ.get("CONFIG_FILE", ROOT_DIR / "config.json"))
 PORT = int(os.environ.get("PORT", "8080"))
@@ -146,6 +149,55 @@ class RequestHandler(BaseHTTPRequestHandler):
             self._send_json({
                 "api_base_url": os.environ.get("PUBLIC_API_BASE_URL", ""),
             })
+            return
+
+        # The agent service can also serve the read-only dashboard contract.
+        # This keeps the UI usable when it is opened from the agent URL and
+        # PUBLIC_API_BASE_URL has not been injected into that revision.
+        path = urlsplit(self.path).path
+        query = parse_qs(urlsplit(self.path).query)
+        bucket_root = (
+            "gs://" + os.environ["GCS_BUCKET_NAME"]
+            if os.environ.get("BUCKET_BACKEND", "local").lower() == "gcs"
+            else str(ROOT_DIR / "bucket_output")
+        )
+        if path == "/api/personas":
+            sectors = {
+                "glucometer-vendor": "Hospital Vendor",
+                "gym-chain": "Gym Chain",
+                "boho-house": "Hospitality Club",
+            }
+            result = []
+            for persona, owner in sorted(contact_store.PERSONA_OWNERS.items()):
+                run_date = exports.latest_run_date(bucket_root, persona)
+                result.append({
+                    "customer_id": persona,
+                    "owner_name": owner,
+                    "tenant_name": contact_store.PERSONA_TENANTS.get(persona, persona),
+                    "sector": sectors.get(persona, "Business Customer"),
+                    "run_date": run_date,
+                })
+            self._send_json(result)
+            return
+
+        m_dashboard = re.match(r"^/api/([^/]+)/dashboard$", path)
+        if m_dashboard:
+            self._send_json(exports.dashboard(bucket_root, m_dashboard.group(1)))
+            return
+
+        m_counterparties = re.match(r"^/api/([^/]+)/counterparties$", path)
+        if m_counterparties:
+            self._send_json(exports.top_counterparties(bucket_root, m_counterparties.group(1), limit=100000))
+            return
+
+        m_heatmap = re.match(r"^/api/([^/]+)/marketing-heatmap$", path)
+        if m_heatmap:
+            self._send_json(exports.marketing_heatmap(bucket_root, m_heatmap.group(1)))
+            return
+
+        m_cases = re.match(r"^/api/([^/]+)/cases$", path)
+        if m_cases:
+            self._send_json(exports.cases_awaiting_review(bucket_root, m_cases.group(1), limit=100000))
             return
 
         if self.path == "/api/governance/audit-summary":
