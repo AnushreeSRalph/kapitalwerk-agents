@@ -2144,11 +2144,11 @@ function buildCleanTenant(count, names, cadence){
 
 // ============================================================
 // Live backend wiring. Fetches from the read-only FastAPI service
-// (https://kapitalwerk-api-910608683088.us-central1.run.app/api) and replaces the previous hardcoded mock
+// Live backend wiring. The API base is resolved at runtime from /api/config.
 // generators. See api/main.py for exact endpoint shapes. Data is cached
 // per-persona and the component re-renders (via setState) when it arrives.
 // ============================================================
-const API_BASE = 'https://kapitalwerk-api-910608683088.us-central1.run.app/api';
+const API_BASE = '/api';
 // Public URL of this UI's own Cloud Run deployment (kapitalwerk-ui service -- see DEPLOY_CLOUDRUN.md).
 const API_TIMEOUT_MS = 10000;
 async function fetchWithTimeout(path, opts){
@@ -2869,9 +2869,14 @@ class Component extends DCLogic {
         this.selectedHeatmapRegion = null;
         
         // Dynamic API endpoint resolution
-        this.apiBase = (window.location.protocol.startsWith('http')) 
-          ? window.location.origin + '/api' 
-          : 'https://kapitalwerk-api-413901847959.us-central1.run.app/api';
+        // The agent service also serves this HTML, but it intentionally does
+        // not expose the read/dashboard API. Use the API service when the UI
+        // is opened from the agent Cloud Run URL; use same-origin locally and
+        // when the API service serves the UI itself.
+        const host = window.location.hostname;
+        const isAgentService = host.includes('kapitalwerk-agent');
+        this.apiBase = null;
+        this.isAgentService = isAgentService;
         
         this.personas = [
           { id: 'glucometer-vendor', name: 'MedSupply Direct', sector: 'Hospital Vendor', accounts: 24 },
@@ -2883,6 +2888,7 @@ class Component extends DCLogic {
       }
 
       async init() {
+        await this.resolveApiBase();
         await this.loadPersonas();
         this.renderPersonaSelector();
         this.setTab('ops');
@@ -2894,6 +2900,28 @@ class Component extends DCLogic {
         lucide.createIcons();
         // Fetch active LLM provider from backend and display in header badge
         this.loadProviderBadge();
+      }
+
+      async resolveApiBase() {
+        const localDefault = window.location.protocol.startsWith('http')
+          ? window.location.origin + '/api' : '/api';
+        if (window.KWN_API_BASE) {
+          this.apiBase = window.KWN_API_BASE.replace(/\/$/, '');
+          return;
+        }
+        try {
+          const response = await fetch(window.location.origin + '/api/config', { cache: 'no-store' });
+          if (response.ok) {
+            const config = await response.json();
+            if (config.api_base_url) {
+              this.apiBase = String(config.api_base_url).replace(/\/$/, '');
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('Runtime API config unavailable; using same-origin API', error);
+        }
+        this.apiBase = localDefault;
       }
 
       async loadPersonas() {
@@ -3348,9 +3376,7 @@ class Component extends DCLogic {
         this.showToast('Escalating to AML Agent', `Invoking AML Agent for ${name} (${caseId})...`);
 
         try {
-          const runBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? window.location.origin
-            : 'https://kapitalwerk-api-910608683088.us-central1.run.app';
+          const runBase = this.apiBase.replace(/\/api$/, '');
 
           const res = await fetch(`${runBase}/api/${this.activePersona}/cases/${caseId}/escalate`, { method: 'POST' });
           const data = await res.json().catch(() => null);
@@ -3771,9 +3797,7 @@ class Component extends DCLogic {
         try {
           appendTermLine('[SUPERVISOR] LangGraph execution dispatched → POST /run', 'text-yellow-300');
 
-          const runBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? window.location.origin
-            : 'https://kapitalwerk-api-910608683088.us-central1.run.app';
+          const runBase = this.apiBase.replace(/\/api$/, '');
 
           const PERSONA_CONFIGS = {
             'glucometer-vendor': {

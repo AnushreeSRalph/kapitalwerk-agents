@@ -268,6 +268,16 @@ def get_provider() -> dict:
     return {"llm_provider": os.environ.get("LLM_PROVIDER", "mock").lower()}
 
 
+@app.get("/api/config")
+def get_runtime_config() -> dict:
+    """Runtime-only browser configuration.
+
+    The API base URL is injected by the deployment environment rather than
+    committed into the public repository or bundled into the HTML.
+    """
+    return {"api_base_url": os.environ.get("PUBLIC_API_BASE_URL", "")}
+
+
 @app.get("/api/{persona}/counterparties")
 def get_counterparties(persona: str, run_date: str | None = None) -> list[dict]:
     """Top-10 counterparties by value for a snapshot (exports.top_counterparties).

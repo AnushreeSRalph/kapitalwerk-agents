@@ -140,6 +140,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if self.path == "/api/config":
+            # Runtime-only UI configuration. Keep service URLs out of the
+            # public HTML and inject them through Cloud Run environment vars.
+            self._send_json({
+                "api_base_url": os.environ.get("PUBLIC_API_BASE_URL", ""),
+            })
+            return
+
         if self.path == "/api/governance/audit-summary":
             # Attempt to read the most recent audit log and summarise it.
             audit_path = ROOT_DIR / "bucket_output" / "_audit" / "aml_audit.jsonl"

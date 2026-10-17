@@ -120,6 +120,7 @@ LLM_PROVIDER=vertex
 GEMINI_MODEL=gemini-2.5-flash
 GOVERNANCE_STORE=firestore
 FIRESTORE_PROJECT=hack-team-chasing-alpha
+PUBLIC_API_BASE_URL=https://YOUR_API_CLOUD_RUN_HOST/api
 ~~~
 
 FIRESTORE_DATABASE may be omitted. The application uses Firestore's default database automatically.
@@ -127,6 +128,8 @@ FIRESTORE_DATABASE may be omitted. The application uses Firestore's default data
 No Gemini API key belongs in the public repository or frontend JavaScript. Vertex AI uses the Cloud Run service account and ADC.
 
 The Cloud Run service account needs Vertex AI User, GCS object read/write access for the configured bucket, and Firestore read/write access. The API and agent services must use the same project, bucket, Firestore database, and governance collection settings.
+
+PUBLIC_API_BASE_URL is a runtime-only deployment variable. Do not put the deployed URL in the public repository or in the bundled HTML. If the UI is served by the API service, it can be omitted and same-origin routing is used.
 
 ## Governance and safety
 
