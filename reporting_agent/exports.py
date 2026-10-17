@@ -11,7 +11,7 @@ import os
 import sys
 import time
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 
 import case_actions
 import notifications
@@ -166,8 +166,7 @@ def _resolve(bucket_root, persona, run_date):
 
 def top_counterparties(bucket_root: str, persona: str, run_date: str | None = None,
                        limit: int = 10) -> list[dict]:
-    """Top counterparties by total successful transaction value in a snapshot.
-"""
+    """Return ledger rows in the schema expected by the standalone UI."""
     run_date = _resolve(bucket_root, persona, run_date)
     if not run_date:
         return []
@@ -181,7 +180,21 @@ def top_counterparties(bucket_root: str, persona: str, run_date: str | None = No
     else:
         if not os.path.exists(path):
             return []
-    agg = defaultdict(lambda: {"transaction_count": 0, "total_value": 0.0, "counterparty_name": None})
+    stats_path = _join(bucket_root, persona, run_date, "historical_stats.json")
+    stats = _load(stats_path) if _exists(stats_path) else {}
+    report_path = _join(bucket_root, persona, run_date, "top_risk_report.json")
+    report = _load(report_path) if _exists(report_path) else {}
+    risk_by_account: dict[str, tuple[str, float]] = {}
+    for case in report.get("top_transactions", []):
+        account = case.get("customer_reference_id")
+        score = float(case.get("risk_score") or 0)
+        if account and score >= risk_by_account.get(account, ("low", -1))[1]:
+            risk_by_account[account] = (str(case.get("risk_tier") or "low").lower(), score)
+
+    agg = defaultdict(lambda: {
+        "transaction_count": 0, "total_value": 0.0,
+        "counterparty_name": None, "dates": []
+    })
     for t in _load(path):
         if t.get("status") not in (None, "Success"):
             continue
@@ -193,9 +206,38 @@ def top_counterparties(bucket_root: str, persona: str, run_date: str | None = No
         a["total_value"] += float(t.get("amount") or 0)
         if not a["counterparty_name"] and t.get("counterparty_name"):
             a["counterparty_name"] = t["counterparty_name"]
-    rows = [{"customer_reference_id": c, "counterparty_name": v["counterparty_name"] or c,
-             "transaction_count": v["transaction_count"], "total_value": round(v["total_value"], 2)}
-            for c, v in agg.items()]
+        tx_date = t.get("transaction_date") or t.get("value_date")
+        if tx_date:
+            a["dates"].append(tx_date)
+
+    rows = []
+    for account, value in agg.items():
+        account_stats = stats.get(account, {})
+        dates = sorted(value["dates"])
+        last_tx = dates[-1] if dates else account_stats.get("last_transaction_date")
+        gaps = []
+        for previous, current in zip(dates, dates[1:]):
+            gaps.append((datetime.fromisoformat(current) - datetime.fromisoformat(previous)).days)
+        cadence = round(sorted(gaps)[len(gaps) // 2]) if gaps else 7
+        overdue = 0
+        if last_tx:
+            overdue = max(0, (date.fromisoformat(run_date) - date.fromisoformat(last_tx)).days - cadence)
+        rows.append({
+            "id": account,
+            "customer_reference_id": account,
+            "shortId": account.split("-")[-1],
+            "name": value["counterparty_name"] or account,
+            "counterparty_name": value["counterparty_name"] or account,
+            "cadence": cadence,
+            "lastTx": last_tx or "N/A",
+            "overdue": overdue,
+            "r3": round(float(account_stats.get("rolling_3m_avg") or 0), 2),
+            "r6": round(float(account_stats.get("rolling_6m_avg") or 0), 2),
+            "r12": round(float(account_stats.get("rolling_12m_avg") or 0), 2),
+            "riskTier": risk_by_account.get(account, ("low", 0))[0],
+            "transaction_count": value["transaction_count"],
+            "total_value": round(value["total_value"], 2),
+        })
     rows.sort(key=lambda r: r["total_value"], reverse=True)
     return rows[:limit]
 
@@ -278,17 +320,31 @@ breakdown by agent and by stop_reason, and an explicit count of fail-closed
     records = _build_audit_store(audit_path or DEFAULT_AUDIT_PATH).all()
 
     by_agent: dict[str, int] = defaultdict(int)
+    by_agent_detail: dict[str, dict[str, int]] = defaultdict(lambda: {
+        "calls": 0, "tokens": 0, "cache_hits": 0, "completed": 0,
+    })
     by_stop_reason: dict[str, int] = defaultdict(int)
     for r in records:
-        by_agent[r.get("agent", "unknown")] += 1
+        agent = r.get("agent", "unknown")
+        by_agent[agent] += 1
+        detail = by_agent_detail[agent]
+        detail["calls"] += 1
+        detail["tokens"] += int(r.get("input_tokens") or 0) + int(r.get("output_tokens") or 0)
+        if r.get("stop_reason") == "cache_hit":
+            detail["cache_hits"] += 1
+        if r.get("stop_reason") == "completed":
+            detail["completed"] += 1
         by_stop_reason[r.get("stop_reason", "unknown")] += 1
     return {
         "total_events": len(records),
         "by_agent": dict(by_agent),
+        "by_agent_detail": dict(by_agent_detail),
         "by_stop_reason": dict(by_stop_reason),
         "pii_blocks": by_stop_reason.get("pii_detected_blocked", 0),
         "llm_calls_completed": by_stop_reason.get("completed", 0),
         "cache_hits": by_stop_reason.get("cache_hit", 0),
+        "cache_store": "Firestore" if os.environ.get("GOVERNANCE_STORE", "memory").lower() == "firestore" else "Local file",
+        "audit_storage": "Firestore" if os.environ.get("GOVERNANCE_STORE", "memory").lower() == "firestore" else "Immutable JSONL",
     }
 
 
@@ -333,12 +389,68 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
 """
     run_date = latest_run_date(bucket_root, persona)
     today = today or (run_date or date.today().isoformat())
+    risk = {"tier": "low", "reasoning": "No risk assessment available."}
+    risk_path = _join(bucket_root, persona, run_date, "top_risk_report.json") if run_date else None
+    if risk_path and _exists(risk_path):
+        report = _load(risk_path)
+        risk["tier"] = str(report.get("run_risk_tier") or "low").lower()
+        cases = report.get("top_transactions") or []
+        if cases:
+            risk["reasoning"] = cases[0].get("reason") or risk["reasoning"]
+    counterparties = top_counterparties(bucket_root, persona, run_date, limit=100000)
+    cases = cases_awaiting_review(bucket_root, persona, run_date, limit=100000)
+    heatmap = marketing_heatmap(bucket_root, persona, run_date)
+    overdue = [row for row in counterparties if row.get("overdue", 0) > 0]
+    metrics = {
+        "total_accounts": len(counterparties),
+        "average_cadence_days": round(
+            sum(float(row.get("cadence") or 0) for row in counterparties) / len(counterparties), 1
+        ) if counterparties else 0,
+        "high_risk_accounts": sum(row.get("riskTier") == "high" for row in counterparties),
+        "overdue_count": len(overdue),
+        "longest_overdue_days": max((row.get("overdue", 0) for row in overdue), default=0),
+        "overdue_capital": round(sum(float(row.get("r3") or 0) for row in overdue), 2),
+        "projected_inflow": round(sum(float(row.get("r3") or 0) for row in counterparties), 2),
+    }
+    # Keep the marketing panel data-backed.  The heatmap is the persisted output
+    # of the marketing agent, so it is a better source than browser-side demo
+    # narratives and remains available while a new pipeline run is processing.
+    opportunities = sorted(heatmap, key=lambda item: float(item.get("total_value") or 0), reverse=True)
+    top = opportunities[0] if opportunities else {}
+    products = []
+    if top:
+        region = top.get("city") or top.get("postal_code") or "the leading region"
+        volume = round(float(top.get("total_value") or 0), 2)
+        products.append({
+            "name": "Working-capital facility",
+            "rationale": f"Latest activity in {region} totals EUR {volume:,.2f}; assess a facility sized to the observed inflow pattern.",
+        })
+        if any(row.get("riskTier") == "high" for row in counterparties) or overdue:
+            products.append({
+                "name": "Trade credit insurance",
+                "rationale": "Live ledger data shows overdue or high-risk counterparties; protect receivables while exposure is reviewed.",
+            })
+        products.append({
+            "name": "Invoice factoring",
+            "rationale": f"Use the {region} inflow concentration as a candidate for faster receivables conversion.",
+        })
+    marketing = {
+        "pattern_label": "Regional inflow opportunity" if top else "No opportunity signal available",
+        "detail": (top.get("narrative") or "No marketing narrative was persisted for the latest snapshot."),
+        "products": products,
+        "top_region": top.get("city") or top.get("postal_code"),
+        "top_region_metric": round(float(top.get("total_value") or 0), 2) if top else 0,
+        "network_count": len(heatmap),
+    }
     return {
+        "risk": risk,
         "persona": persona,
         "run_date": run_date,
-        "top_counterparties": top_counterparties(bucket_root, persona, run_date),
-        "cases_awaiting_review": cases_awaiting_review(bucket_root, persona, run_date),
+        "metrics": metrics,
+        "marketing": marketing,
+        "top_counterparties": counterparties,
+        "cases_awaiting_review": cases,
         "recent_notifications": recent_notifications(bucket_root, persona, today),
-        "marketing_heatmap": marketing_heatmap(bucket_root, persona, run_date),
+        "marketing_heatmap": heatmap,
         "governance_audit_summary": governance_audit_summary(audit_path),
     }

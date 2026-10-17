@@ -240,14 +240,32 @@ def list_personas() -> list[dict]:
 without hardcoding names. {customer_id, owner_name, tenant_name}.
 """
 
-    return [
-        {
+    sectors = {
+        "glucometer-vendor": "Hospital Vendor",
+        "gym-chain": "Gym Chain",
+        "boho-house": "Hospitality Club",
+    }
+    result = []
+    for persona, owner_name in sorted(contact_store.PERSONA_OWNERS.items()):
+        run_date = exports.latest_run_date(BUCKET_ROOT, persona)
+        result.append({
             "customer_id": persona,
             "owner_name": owner_name,
             "tenant_name": contact_store.PERSONA_TENANTS.get(persona, persona),
-        }
-        for persona, owner_name in sorted(contact_store.PERSONA_OWNERS.items())
-    ]
+            "sector": sectors.get(persona, "Business Customer"),
+            # Account totals are calculated from the selected snapshot by the
+            # dashboard endpoint; do not read every transaction just to build
+            # the persona selector.
+            "accounts": None,
+            "run_date": run_date,
+        })
+    return result
+
+
+@app.get("/api/provider")
+def get_provider() -> dict:
+    """Return the provider configured for this API process."""
+    return {"llm_provider": os.environ.get("LLM_PROVIDER", "mock").lower()}
 
 
 @app.get("/api/{persona}/counterparties")
@@ -255,7 +273,7 @@ def get_counterparties(persona: str, run_date: str | None = None) -> list[dict]:
     """Top-10 counterparties by value for a snapshot (exports.top_counterparties).
 """
     _require_persona(persona)
-    return exports.top_counterparties(BUCKET_ROOT, persona, run_date)
+    return exports.top_counterparties(BUCKET_ROOT, persona, run_date, limit=100000)
 
 
 @app.get("/api/{persona}/cases")

@@ -184,7 +184,7 @@
         <span>API Connected</span>
       </span>
       <span class="text-slate-600">|</span>
-      <span id="headerRunDate" class="text-slate-300">Run: 2026-09-28</span>
+      <span id="headerRunDate" class="text-slate-300">Run: —</span>
       <span class="text-slate-600">|</span>
       <span id="llmProviderBadge" class="flex items-center gap-1 text-sky-400">
         <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
@@ -305,24 +305,24 @@
                 </span>
               </div>
               <p id="tenantSubMeta" class="text-xs font-mono text-slate-400 mt-1.5">
-                ID: glucometer-vendor · 24 active hospital counterparties · Cadence: 7 days
+                Loading latest completed snapshot…
               </p>
             </div>
             
             <div class="flex items-center gap-2 text-xs font-mono text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
               <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
-              <span id="tenantRunDateLabel">Latest Snapshot: 2026-09-28</span>
+              <span id="tenantRunDateLabel">Latest Snapshot: loading…</span>
             </div>
           </div>
 
           <div class="mt-6 pt-5 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
             <div>
               <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Total Accounts</span>
-              <div id="metricTotalAccounts" class="text-lg font-bold font-mono text-slate-800 mt-0.5">24</div>
+              <div id="metricTotalAccounts" class="text-lg font-bold font-mono text-slate-800 mt-0.5">—</div>
             </div>
             <div>
               <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Average Cadence</span>
-              <div class="text-lg font-bold font-mono text-slate-800 mt-0.5">7.2 days</div>
+              <div id="metricAverageCadence" class="text-lg font-bold font-mono text-slate-800 mt-0.5">—</div>
             </div>
             <div>
               <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">PII Gate Status</span>
@@ -368,9 +368,9 @@
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">High Risk Accounts</span>
-            <div id="kpiHighRisk" class="text-2xl font-black font-mono text-slate-900 mt-1">3 <span class="text-xs font-normal text-slate-400">/ 24</span></div>
+            <div id="kpiHighRisk" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
             <span id="kpiHighRiskSub" class="text-[11px] font-semibold text-rose-600 mt-1 inline-flex items-center gap-1 font-mono">
-              <i data-lucide="alert-circle" class="w-3 h-3"></i> 12.5% of ledger
+              <i data-lucide="alert-circle" class="w-3 h-3"></i> loading…
             </span>
           </div>
           <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
@@ -381,9 +381,9 @@
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue Remittances</span>
-            <div id="kpiOverdueCount" class="text-2xl font-black font-mono text-slate-900 mt-1">6 <span class="text-xs font-normal text-slate-400">credits</span></div>
+            <div id="kpiOverdueCount" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
             <span id="kpiOverdueCountSub" class="text-[11px] font-semibold text-amber-600 mt-1 inline-flex items-center gap-1 font-mono">
-              <i data-lucide="clock" class="w-3 h-3"></i> Longest: 18d overdue
+              <i data-lucide="clock" class="w-3 h-3"></i> loading…
             </span>
           </div>
           <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -394,7 +394,7 @@
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Overdue Capital</span>
-            <div id="kpiOverdueTotal" class="text-2xl font-black font-mono text-slate-900 mt-1">€71,830.40</div>
+            <div id="kpiOverdueTotal" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
             <span id="kpiOverdueTotalSub" class="text-[11px] font-semibold text-slate-500 mt-1 inline-flex items-center gap-1 font-mono">
               <i data-lucide="arrow-down-right" class="w-3 h-3 text-rose-500"></i> Subject to weekly reminder
             </span>
@@ -407,7 +407,7 @@
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">30-Day Projected Inflow</span>
-            <div id="kpiProjectedTotal" class="text-2xl font-black font-mono text-slate-900 mt-1">€284,510.90</div>
+            <div id="kpiProjectedTotal" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
             <span id="kpiProjectedTotalSub" class="text-[11px] font-semibold text-emerald-600 mt-1 inline-flex items-center gap-1 font-mono">
               <i data-lucide="trending-up" class="w-3 h-3"></i> Inflow Agent forecast
             </span>
@@ -1113,15 +1113,15 @@
         
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">LLM Calls Completed</span>
-          <div id="govCallsCompleted" class="text-2xl font-black font-mono text-slate-900 mt-1">48 calls</div>
+          <div id="govCallsCompleted" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
           <span id="govTotalEvents" class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1 font-mono">
-            <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500"></i> 48 audit records logged
+            <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500"></i> loading audit records…
           </span>
         </div>
 
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">PII Blocks (Fail-Closed)</span>
-          <div id="govPiiBlocks" class="text-2xl font-black font-mono text-emerald-600 mt-1">0 blocked</div>
+          <div id="govPiiBlocks" class="text-2xl font-black font-mono text-emerald-600 mt-1">—</div>
           <span class="text-[11px] font-semibold text-emerald-600 mt-1 flex items-center gap-1 font-mono">
             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 100% fail-closed gate passed
           </span>
@@ -1129,9 +1129,9 @@
 
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Semantic Cache Hit Rate</span>
-          <div id="govCacheHitRate" class="text-2xl font-black font-mono text-brand-500 mt-1">33.3%</div>
+          <div id="govCacheHitRate" class="text-2xl font-black font-mono text-brand-500 mt-1">—</div>
           <span id="govCacheHits" class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1 font-mono">
-            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i> 16 calls saved at zero cost
+            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-500"></i> loading cache events…
           </span>
         </div>
 
@@ -1180,15 +1180,15 @@
             <div class="space-y-2 text-xs">
               <div class="flex justify-between py-1 border-b border-slate-100">
                 <span class="text-slate-500">Cache Store:</span>
-                <span class="font-mono font-bold text-slate-800">InMemory / Firestore</span>
+                <span id="govCacheStore" class="font-mono font-bold text-slate-800">loading…</span>
               </div>
               <div class="flex justify-between py-1 border-b border-slate-100">
                 <span class="text-slate-500">Token Savings:</span>
-                <span class="font-mono font-bold text-emerald-600">~24,500 tokens</span>
+                <span id="govTokenSavings" class="font-mono font-bold text-emerald-600">not recorded</span>
               </div>
               <div class="flex justify-between py-1">
                 <span class="text-slate-500">Audit Storage:</span>
-                <span class="font-mono font-bold text-slate-800">Immutable JSONL</span>
+                <span id="govAuditStorage" class="font-mono font-bold text-slate-800">loading…</span>
               </div>
             </div>
           </div>
@@ -2871,7 +2871,7 @@ class Component extends DCLogic {
         // Dynamic API endpoint resolution
         this.apiBase = (window.location.protocol.startsWith('http')) 
           ? window.location.origin + '/api' 
-          : 'https://kapitalwerk-api-910608683088.us-central1.run.app/api';
+          : 'https://kapitalwerk-api-413901847959.us-central1.run.app/api';
         
         this.personas = [
           { id: 'glucometer-vendor', name: 'MedSupply Direct', sector: 'Hospital Vendor', accounts: 24 },
@@ -2883,20 +2883,42 @@ class Component extends DCLogic {
       }
 
       async init() {
+        await this.loadPersonas();
         this.renderPersonaSelector();
         this.setTab('ops');
         await this.loadPersona(this.activePersona);
         await this.loadGovernance();
+        // Keep the audit panel current while agents/pipeline workers append
+        // records in the background. The endpoint is read-only and cheap.
+        this.governanceRefreshTimer = setInterval(() => this.loadGovernance(), 15000);
         lucide.createIcons();
         // Fetch active LLM provider from backend and display in header badge
         this.loadProviderBadge();
       }
 
+      async loadPersonas() {
+        try {
+          const response = await fetch(this.apiBase + '/personas', { cache: 'no-store' });
+          if (!response.ok) throw new Error('personas ' + response.status);
+          const personas = await response.json();
+          if (Array.isArray(personas) && personas.length) {
+            this.personas = personas.map(p => ({
+              id: p.customer_id,
+              name: p.tenant_name || p.customer_id,
+              sector: p.sector || 'Business Customer',
+              accounts: Number(p.accounts || 0),
+              runDate: p.run_date || null,
+            }));
+            if (!this.personas.some(p => p.id === this.activePersona)) this.activePersona = this.personas[0].id;
+          }
+        } catch (error) {
+          console.warn('Personas API unavailable; using offline metadata', error);
+        }
+      }
+
       async loadProviderBadge() {
         try {
-          const runBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? window.location.origin
-            : 'https://kapitalwerk-api-910608683088.us-central1.run.app';
+          const runBase = this.apiBase.replace(/\/api$/, '');
           const r = await fetch(`${runBase}/api/provider`);
           if (!r.ok) return;
           const d = await r.json();
@@ -2948,48 +2970,44 @@ class Component extends DCLogic {
       }
 
       async loadPersona(persona) {
-        document.getElementById('tenantRunDateLabel').textContent = `Latest Snapshot: ${todayISO()}`;
         const currentMeta = this.personas.find(p => p.id === persona) || this.personas[0];
-        document.getElementById('tenantTitle').textContent = currentMeta.name;
-        document.getElementById('tenantSectorBadge').textContent = currentMeta.sector;
-        document.getElementById('tenantSubMeta').textContent = `ID: ${persona} · ${currentMeta.accounts} active counterparties · Cadence: 7 days`;
-        document.getElementById('metricTotalAccounts').textContent = currentMeta.accounts;
-
-        // Try fetch from API, fall back to embedded seeds
+        this.dashboardData = null;
+        this.counterpartyData = [];
+        this.casesData = [];
+        this.heatmapData = [];
         try {
-          const [dashboard, counterparties, cases, heatmap, reminder] = await Promise.allSettled([
-            fetch(`${this.apiBase}/${persona}/dashboard`).then(r => r.json()),
-            fetch(`${this.apiBase}/${persona}/counterparties`).then(r => r.json()),
-            fetch(`${this.apiBase}/${persona}/cases`).then(r => r.json()),
-            fetch(`${this.apiBase}/${persona}/marketing-heatmap`).then(r => r.json()),
-            fetch(`${this.apiBase}/${persona}/reminder-preview`).then(r => r.json()),
-          ]);
-
-          this.counterpartyData = (counterparties.status === 'fulfilled' && counterparties.value.length) 
-            ? counterparties.value 
-            : this.getSeedCounterparties();
-
-          this.casesData = (cases.status === 'fulfilled' && cases.value.length)
-            ? cases.value
-            : this.getSeedCases();
-
-          this.heatmapData = (heatmap.status === 'fulfilled' && heatmap.value.length)
-            ? heatmap.value
-            : this.getSeedHeatmap();
-
-          this.reminderData = (reminder.status === 'fulfilled') ? reminder.value : null;
-
+          const response = await fetch(this.apiBase + '/' + persona + '/dashboard', { cache: 'no-store' });
+          if (!response.ok) throw new Error('dashboard ' + response.status);
+          this.dashboardData = await response.json();
+          this.counterpartyData = Array.isArray(this.dashboardData.top_counterparties) ? this.dashboardData.top_counterparties : [];
+          this.casesData = Array.isArray(this.dashboardData.cases_awaiting_review) ? this.dashboardData.cases_awaiting_review : [];
+          this.heatmapData = Array.isArray(this.dashboardData.marketing_heatmap) ? this.dashboardData.marketing_heatmap : [];
+          const metrics = this.dashboardData.metrics || {};
+          const count = Number(metrics.total_accounts ?? this.counterpartyData.length);
+          document.getElementById('tenantTitle').textContent = currentMeta.name;
+          document.getElementById('tenantSectorBadge').textContent = currentMeta.sector;
+          document.getElementById('tenantSubMeta').textContent = 'ID: ' + persona + ' · ' + count + ' active counterparties · Cadence: ' + (metrics.average_cadence_days || 0) + ' days';
+          document.getElementById('tenantRunDateLabel').textContent = 'Latest Snapshot: ' + (this.dashboardData.run_date || 'No completed snapshot');
+          document.getElementById('headerRunDate').textContent = 'Run: ' + (this.dashboardData.run_date || '—');
+          document.getElementById('metricTotalAccounts').textContent = count;
+          document.getElementById('metricAverageCadence').textContent = (metrics.average_cadence_days || 0) + ' days';
           document.getElementById('apiStatusBadge').innerHTML = '<i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i><span>API Connected</span>';
           document.getElementById('apiStatusBadge').className = 'flex items-center gap-1 text-emerald-400';
         } catch (err) {
-          console.warn('Backend API offline; using embedded seeds', err);
+          console.warn('Backend API offline; using embedded demo data', err);
           this.counterpartyData = this.getSeedCounterparties();
           this.casesData = this.getSeedCases();
           this.heatmapData = this.getSeedHeatmap();
-          document.getElementById('apiStatusBadge').innerHTML = '<i data-lucide="wifi-off" class="w-3.5 h-3.5"></i><span>Seed Mode (Offline)</span>';
+          document.getElementById('apiStatusBadge').innerHTML = '<i data-lucide="wifi-off" class="w-3.5 h-3.5"></i><span>Demo Mode (Offline)</span>';
           document.getElementById('apiStatusBadge').className = 'flex items-center gap-1 text-amber-400';
+          document.getElementById('tenantTitle').textContent = currentMeta.name;
+          document.getElementById('tenantSectorBadge').textContent = currentMeta.sector;
+          document.getElementById('tenantSubMeta').textContent = 'ID: ' + persona + ' · demo data';
+          document.getElementById('tenantRunDateLabel').textContent = 'Latest Snapshot: unavailable';
+          document.getElementById('headerRunDate').textContent = 'Run: —';
+          document.getElementById('metricTotalAccounts').textContent = this.counterpartyData.length;
+          document.getElementById('metricAverageCadence').textContent = '—';
         }
-
         this.renderPortfolioRisk(persona);
         this.renderMetricsSummary(persona);
         this.renderCounterparties();
@@ -3008,7 +3026,24 @@ class Component extends DCLogic {
         const reasoning = document.getElementById('riskReasoning');
         if (!card || !pill || !heading || !reasoning) return;
 
-        // Persona specific risk profiles evaluated by Risk Agent
+        const liveRisk = this.dashboardData && this.dashboardData.risk;
+        if (liveRisk) {
+          const tier = String(liveRisk.tier || 'low').toLowerCase();
+          const styles = {
+            high: ['HIGH RISK', 'High Tier (Critical Remediation)', 'from-rose-50 to-red-50 border-rose-200 text-rose-950', 'bg-rose-600 text-white'],
+            medium: ['MEDIUM RISK', 'Medium Tier (Elevated Watch)', 'from-amber-50 to-orange-50 border-amber-200 text-amber-950', 'bg-amber-600 text-white'],
+            low: ['LOW RISK', 'Low Tier (Stable Ledger)', 'from-emerald-50 to-teal-50 border-emerald-200 text-emerald-950', 'bg-emerald-600 text-white']
+          };
+          const style = styles[tier] || styles.low;
+          card.className = `rounded-2xl p-6 border shadow-sm flex flex-col justify-between bg-gradient-to-br transition-all duration-300 ${style[2]}`;
+          pill.className = `px-2.5 py-0.5 text-xs font-bold rounded-full shadow-sm font-mono transition-all duration-300 ${style[3]}`;
+          pill.textContent = style[0];
+          heading.textContent = style[1];
+          reasoning.textContent = liveRisk.reasoning || 'No risk assessment available.';
+          return;
+        }
+
+        // Fallback profile for offline/legacy API responses.
         const RISK_PROFILES = {
           'glucometer-vendor': {
             tier: 'high',
@@ -3049,80 +3084,35 @@ class Component extends DCLogic {
       }
 
       renderMetricsSummary(persona) {
-        // High Risk Accounts count
-        const highRiskEl = document.getElementById('kpiHighRisk');
-        const highRiskSub = document.getElementById('kpiHighRiskSub');
-        const overdueCountEl = document.getElementById('kpiOverdueCount');
-        const overdueCountSub = document.getElementById('kpiOverdueCountSub');
-        const overdueTotalEl = document.getElementById('kpiOverdueTotal');
-        const overdueTotalSub = document.getElementById('kpiOverdueTotalSub');
-        const projectedTotalEl = document.getElementById('kpiProjectedTotal');
-        const projectedTotalSub = document.getElementById('kpiProjectedTotalSub');
-
-        const METRICS = {
-          'glucometer-vendor': {
-            highRisk: '3', totalAcc: '24', pct: '12.5% of ledger',
-            overdueCount: '6 credits', longest: 'Longest: 18d overdue',
-            overdueTotal: '€71,830.40',
-            projectedTotal: '€284,510.90'
-          },
-          'gym-chain': {
-            highRisk: '0', totalAcc: '14', pct: '0.0% of ledger',
-            overdueCount: '1 credit', longest: 'Longest: 4d overdue',
-            overdueTotal: '€4,250.00',
-            projectedTotal: '€112,400.00'
-          },
-          'boho-house': {
-            highRisk: '1', totalAcc: '9', pct: '11.1% of ledger',
-            overdueCount: '2 credits', longest: 'Longest: 8d overdue',
-            overdueTotal: '€18,640.00',
-            projectedTotal: '€68,900.00'
-          }
-        };
-
-        const m = METRICS[persona] || METRICS['glucometer-vendor'];
-
-        if (highRiskEl) highRiskEl.innerHTML = `${m.highRisk} <span class="text-xs font-normal text-slate-400">/ ${m.totalAcc}</span>`;
-        if (highRiskSub) highRiskSub.innerHTML = `<i data-lucide="alert-circle" class="w-3 h-3"></i> ${m.pct}`;
-        if (overdueCountEl) overdueCountEl.innerHTML = `${m.overdueCount} <span class="text-xs font-normal text-slate-400">credits</span>`;
-        if (overdueCountSub) overdueCountSub.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> ${m.longest}`;
-        if (overdueTotalEl) overdueTotalEl.textContent = m.overdueTotal;
-        if (projectedTotalEl) projectedTotalEl.textContent = m.projectedTotal;
+        const m = (this.dashboardData && this.dashboardData.metrics) || {};
+        const total = Number(m.total_accounts ?? this.counterpartyData.length);
+        const high = Number(m.high_risk_accounts ?? this.counterpartyData.filter(c => c.riskTier === 'high').length);
+        const overdue = Number(m.overdue_count || 0);
+        const pct = total ? ((high / total) * 100).toFixed(1) : '0.0';
+        const highRisk = document.getElementById('kpiHighRisk');
+        const highSub = document.getElementById('kpiHighRiskSub');
+        const overdueCount = document.getElementById('kpiOverdueCount');
+        const overdueSub = document.getElementById('kpiOverdueCountSub');
+        if (highRisk) highRisk.innerHTML = high + ' <span class="text-xs font-normal text-slate-400">/ ' + total + '</span>';
+        if (highSub) highSub.innerHTML = '<i data-lucide="alert-circle" class="w-3 h-3"></i> ' + pct + '% of ledger';
+        if (overdueCount) overdueCount.innerHTML = overdue + ' <span class="text-xs font-normal text-slate-400">credits</span>';
+        if (overdueSub) overdueSub.innerHTML = '<i data-lucide="clock" class="w-3 h-3"></i> Longest: ' + Number(m.longest_overdue_days || 0) + 'd overdue';
+        const overdueTotal = document.getElementById('kpiOverdueTotal');
+        const projected = document.getElementById('kpiProjectedTotal');
+        if (overdueTotal) overdueTotal.textContent = fmtEUR(m.overdue_capital || 0);
+        if (projected) projected.textContent = fmtEUR(m.projected_inflow || 0);
       }
 
       renderOpportunityEngine(persona) {
+        const marketing = (this.dashboardData && this.dashboardData.marketing) || {};
         const hubTitle = document.getElementById('oppHubTitle');
         const hubMetric = document.getElementById('oppHubMetric');
         const netTitle = document.getElementById('oppNetworkTitle');
         const netMetric = document.getElementById('oppNetworkMetric');
-        if (!hubTitle || !hubMetric || !netTitle || !netMetric) return;
-
-        const OPPORTUNITIES = {
-          'glucometer-vendor': {
-            hubTitle: 'Frankfurt Regional Cluster',
-            hubMetric: '+28% YoY Inflow Growth',
-            netTitle: 'Berlin Metropolitan Area',
-            netMetric: '61 Clinical Institutions'
-          },
-          'gym-chain': {
-            hubTitle: 'Munich Urban Network',
-            hubMetric: '+34% Recurring Member Volume',
-            netTitle: 'Rhine-Ruhr Metro District',
-            netMetric: '88 Fitness Facilities'
-          },
-          'boho-house': {
-            hubTitle: 'Berlin-Kreuzberg Hub',
-            hubMetric: '+22% Event Remittance Velocity',
-            netTitle: 'Hamburg Creative Quarters',
-            netMetric: '19 Hospitality Venues'
-          }
-        };
-
-        const opp = OPPORTUNITIES[persona] || OPPORTUNITIES['glucometer-vendor'];
-        hubTitle.textContent = opp.hubTitle;
-        hubMetric.textContent = opp.hubMetric;
-        netTitle.textContent = opp.netTitle;
-        netMetric.textContent = opp.netMetric;
+        if (hubTitle) hubTitle.textContent = marketing.top_region || 'No region signal';
+        if (hubMetric) hubMetric.textContent = marketing.top_region_metric ? fmtEUR(marketing.top_region_metric) + ' latest volume' : 'No persisted volume signal';
+        if (netTitle) netTitle.textContent = 'Latest marketing snapshot';
+        if (netMetric) netMetric.textContent = Number(marketing.network_count || 0) + ' regions';
       }
 
       getSeedCounterparties() {
@@ -3319,7 +3309,7 @@ class Component extends DCLogic {
         try {
           const runBase = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? window.location.origin
-            : 'https://kapitalwerk-api-910608683088.us-central1.run.app';
+            : this.apiBase.replace(/\/api$/, '');
           await fetch(`${runBase}/api/${this.activePersona}/cases/${caseId}/acknowledge`, { method: 'POST' });
         } catch(e) {
           console.warn('API error; updating locally', e);
@@ -3436,19 +3426,16 @@ class Component extends DCLogic {
       }
 
       renderMarketing() {
-        const signal = MARKETING_SIGNALS[this.activePersona] || MARKETING_SIGNALS['glucometer-vendor'];
-        document.getElementById('marketingPatternTitle').textContent = signal.patternLabel;
-        document.getElementById('marketingPatternDetail').textContent = signal.detail;
-
-        const prodContainer = document.getElementById('marketingProductsList');
-        if (prodContainer) {
-          prodContainer.innerHTML = signal.products.map(p => `
-            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-              <div class="font-bold text-slate-900">${p.name}</div>
-              <div class="text-xs text-slate-600 mt-1 leading-relaxed">${p.rationale}</div>
-            </div>
-          `).join('');
-        }
+        const marketing = (this.dashboardData && this.dashboardData.marketing) || {};
+        const title = document.getElementById('marketingPatternTitle');
+        const detail = document.getElementById('marketingPatternDetail');
+        if (title) title.textContent = marketing.pattern_label || 'No marketing signal available';
+        if (detail) detail.textContent = marketing.detail || 'No marketing narrative was persisted for the latest snapshot.';
+        const products = document.getElementById('marketingProductsList');
+        const list = Array.isArray(marketing.products) ? marketing.products : [];
+        if (products) products.innerHTML = list.length
+          ? list.map(p => '<div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200"><div class="font-bold text-slate-900">' + (p.name || 'Product signal') + '</div><div class="text-xs text-slate-600 mt-1 leading-relaxed">' + (p.rationale || '') + '</div></div>').join('')
+          : '<div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">No product recommendations in the latest snapshot.</div>';
       }
 
       renderHeatmap() {
@@ -3526,10 +3513,18 @@ class Component extends DCLogic {
 
       async loadGovernance() {
         try {
-          const [summary, log] = await Promise.all([
-            fetch(`${this.apiBase}/governance/audit-summary`).then(r => r.json()),
-            fetch(`${this.apiBase}/governance/audit-log?limit=50`).then(r => r.json())
+          const [summaryResponse, logResponse] = await Promise.all([
+            fetch(`${this.apiBase}/governance/audit-summary`, { cache: 'no-store' }),
+            fetch(`${this.apiBase}/governance/audit-log?limit=50`, { cache: 'no-store' })
           ]);
+          if (!summaryResponse.ok) throw new Error('audit-summary ' + summaryResponse.status);
+          if (!logResponse.ok) throw new Error('audit-log ' + logResponse.status);
+          const summary = await summaryResponse.json();
+          const logPayload = await logResponse.json();
+          // The API returns the audit log as an array; accept the old
+          // {records: []} shape too so cached/deployed revisions remain safe.
+          const records = Array.isArray(logPayload) ? logPayload : (logPayload.records || []);
+          const agentSummary = summary.by_agent_detail || summary.by_agent || {};
 
           document.getElementById('govCallsCompleted').textContent = `${summary.llm_calls_completed} calls`;
           document.getElementById('govTotalEvents').textContent = `${summary.total_events} total audit events`;
@@ -3539,13 +3534,21 @@ class Component extends DCLogic {
           document.getElementById('govCacheHitRate').textContent = `${hitRate}%`;
           document.getElementById('cacheDonutPct').textContent = `${hitRate}%`;
           document.getElementById('govCacheHits').textContent = `${summary.cache_hits} calls served from cache`;
+          const cacheStore = document.getElementById('govCacheStore');
+          const tokenSavings = document.getElementById('govTokenSavings');
+          const auditStorage = document.getElementById('govAuditStorage');
+          if (cacheStore) cacheStore.textContent = summary.cache_store || 'Local file / Firestore';
+          if (tokenSavings) tokenSavings.textContent = summary.token_savings != null ? `${summary.token_savings} tokens` : 'not recorded';
+          if (auditStorage) auditStorage.textContent = summary.audit_storage || 'JSONL / Firestore';
 
           const budgetContainer = document.getElementById('govBudgetBars');
-          if (budgetContainer && summary.by_agent) {
-            budgetContainer.innerHTML = Object.entries(summary.by_agent).map(([agent, stats]) => {
-              const calls = stats.calls || 0;
-              const tokens = stats.tokens || 0;
-              const cacheHits = stats.cache_hits || 0;
+          if (budgetContainer && agentSummary) {
+            budgetContainer.innerHTML = Object.entries(agentSummary).map(([agent, stats]) => {
+              // Current API summary stores one event count per agent. Older
+              // UI code expected a nested object, so support both forms.
+              const calls = typeof stats === 'number' ? stats : (stats.calls || 0);
+              const tokens = typeof stats === 'number' ? 0 : (stats.tokens || 0);
+              const cacheHits = typeof stats === 'number' ? 0 : (stats.cache_hits || 0);
               const cap = Math.max(50, Math.ceil((calls * 1.25) / 50) * 50);
               const pct = Math.min(100, Math.round(calls / cap * 100));
               return `
@@ -3563,8 +3566,8 @@ class Component extends DCLogic {
           }
 
           const logTbody = document.getElementById('auditLogBody');
-          if (logTbody && log.records && log.records.length) {
-            logTbody.innerHTML = log.records.map(r => {
+          if (logTbody) {
+            logTbody.innerHTML = records.length ? records.map(r => {
               const ok = r.stop_reason === 'completed' || r.stop_reason === 'cache_hit';
               return `
                 <tr class="hover:bg-slate-50">
@@ -3581,7 +3584,7 @@ class Component extends DCLogic {
                   </td>
                 </tr>
               `;
-            }).join('');
+            }).join('') : '<tr><td colspan="7" class="py-4 px-4 text-center text-slate-400">No audit events recorded yet.</td></tr>';
           }
         } catch(e) {
           console.warn('Governance load fallback', e);
@@ -3655,21 +3658,25 @@ class Component extends DCLogic {
 
       previewInternalEmail() {
         document.getElementById('emailHeadline').textContent = "Weekly Credit Summary is Ready";
-        document.getElementById('emailSubheadline').textContent = "MedSupply Direct · 24 active hospital accounts";
+        const meta = this.personas.find(p => p.id === this.activePersona) || {};
+        const metrics = (this.dashboardData && this.dashboardData.metrics) || {};
+        document.getElementById('emailSubheadline').textContent = (meta.name || this.activePersona) + ' · ' + (metrics.total_accounts || this.counterpartyData.length) + ' active accounts';
         document.getElementById('emailGreeting').textContent = "Hi Treasury Ops Team,";
-        document.getElementById('emailBodyText').textContent = "Here is this week's cumulative and projected credit summary across all active accounts for MedSupply Direct. Cumulative reflects trailing 12 months; projected reflects expected next-period credits.";
-        document.getElementById('emailAmountVal').textContent = "€284,510.90";
+        document.getElementById('emailBodyText').textContent = "Here is this week's persisted credit summary across the latest completed snapshot. Projected inflow is calculated from the current rolling baseline data.";
+        document.getElementById('emailAmountVal').textContent = fmtEUR(metrics.projected_inflow || 0);
         document.getElementById('emailBadge').textContent = 'TREASURY SUMMARY';
         
         document.getElementById('emailModal').classList.remove('hidden');
       }
 
       previewLeadMemo() {
-        document.getElementById('emailHeadline').textContent = "Cross-Sell Lead Memo: MedSupply Direct";
+        const meta = this.personas.find(p => p.id === this.activePersona) || {};
+        const marketing = (this.dashboardData && this.dashboardData.marketing) || {};
+        document.getElementById('emailHeadline').textContent = "Cross-Sell Lead Memo: " + (meta.name || this.activePersona);
         document.getElementById('emailSubheadline').textContent = "Detected rising receivables exposure";
         document.getElementById('emailGreeting').textContent = "Hi Relationship Banking Team,";
-        document.getElementById('emailBodyText').textContent = "Marketing Agent flagged a 28% volume increase across 3 primary hospital counterparties. Recommended next products: Trade Credit Insurance (Kreditversicherung) & Invoice Factoring.";
-        document.getElementById('emailAmountVal').textContent = "€128,490.00 Exp.";
+        document.getElementById('emailBodyText').textContent = marketing.detail || 'No marketing narrative was persisted for the latest snapshot.';
+        document.getElementById('emailAmountVal').textContent = fmtEUR(marketing.top_region_metric || 0) + ' latest volume';
         document.getElementById('emailBadge').textContent = 'CROSS-SELL LEAD';
         
         document.getElementById('emailModal').classList.remove('hidden');
@@ -3784,7 +3791,7 @@ class Component extends DCLogic {
           };
           const personaCfg = PERSONA_CONFIGS[this.activePersona] || PERSONA_CONFIGS['glucometer-vendor'];
 
-          const resp = await fetch(`${runBase}/run`, {
+          const resp = await fetch(`${runBase}/api/run`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
