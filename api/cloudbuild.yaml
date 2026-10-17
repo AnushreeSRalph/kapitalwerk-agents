@@ -1,0 +1,49 @@
+# Cloud Build config for the API + UI Cloud Run Service. Sibling to the
+# repo-root cloudbuild.yaml, which builds the batch pipeline Job instead.
+# See DEPLOY_CLOUDRUN.md section 9. Run from the repo root.
+
+substitutions:
+  _REGION: us-central1
+  _REPO: kapitalwerkagents
+  _IMAGE: api
+  _SERVICE_NAME: kapitalwerkagents-api
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest'
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - api/Dockerfile
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA'
+      - -t
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest'
+      - .
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA'
+
+  # Image only -- env vars/secrets/volume mounts stay on the service itself
+  # (see the `gcloud run deploy` in DEPLOY_CLOUDRUN.md §9).
+  - id: deploy-service
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - services
+      - update
+      - '${_SERVICE_NAME}'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA'
+      - '--region=${_REGION}'
+
+timeout: 1200s
+options:
+  logging: CLOUD_LOGGING_ONLY

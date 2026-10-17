@@ -1,0 +1,65 @@
+serviceAccount: projects/project-5b1aefc0-3657-42da-8b7/serviceAccounts/kapitalwerk-nxt@project-5b1aefc0-3657-42da-8b7.iam.gserviceaccount.com
+
+substitutions:
+  _CLOUD_RUN_SERVICE_ACCOUNT: "kapitalwerk-nxt@project-5b1aefc0-3657-42da-8b7.iam.gserviceaccount.com"
+  # Vertex AI via ADC -- org policy disallows API keys, so no GEMINI_API_KEY.
+  # Service account needs roles/aiplatform.user; see DEPLOY.md.
+  _GCP_LOCATION: "us-central1"
+  _GCS_BUCKET_NAME: "kapitalwerk-nxt-gcs"
+  # Weekly reminder emails -- key comes from Secret Manager, see DEPLOY.md.
+  _REMINDER_NOTIFIER: "resend"
+  _RESEND_SECRET_NAME: "resend-api-key:latest"
+  _GEMINI_SECRET_NAME: "GEMINI_API_KEY:latest"
+  _RESEND_FROM_EMAIL: "onboarding@resend.dev"
+  # Governance cache/audit persistence -- requires a Native-mode Firestore
+  _GOVERNANCE_STORE: "firestore"
+  # Demo reset: escalated/acknowledged cases revert to "awaiting_review" after
+  # this many hours. 0 disables the reset.
+  _CASE_ACTION_RESET_HOURS: "6"
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/kapitalwerk-nxt/api:latest', '-f', 'api/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/kapitalwerk-nxt/api:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/kapitalwerk-nxt/agent:latest', '-f', 'Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/kapitalwerk-nxt/agent:latest']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-lc'
+      - |
+        set -e
+        # Deploy the agent service first so we can capture its URL for the API
+        gcloud run deploy kapitalwerk-agent \
+          --image us-central1-docker.pkg.dev/$PROJECT_ID/kapitalwerk-nxt/agent:latest \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --service-account "${_CLOUD_RUN_SERVICE_ACCOUNT}" \
+          --set-env-vars "BUCKET_BACKEND=gcs,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},LLM_PROVIDER=gemini,GCP_PROJECT=$PROJECT_ID,GCP_LOCATION=${_GCP_LOCATION},CONFIG_FILE=/app/config.json,REMINDER_NOTIFIER=${_REMINDER_NOTIFIER},RESEND_FROM_EMAIL=${_RESEND_FROM_EMAIL},GOVERNANCE_STORE=${_GOVERNANCE_STORE}" \
+          --set-secrets "RESEND_API_KEY=${_RESEND_SECRET_NAME},GEMINI_API_KEY=${_GEMINI_SECRET_NAME}" \
+          --memory=1Gi \
+          --timeout=15m
+
+        AGENT_URL=$(gcloud run services describe kapitalwerk-agent --region us-central1 --platform managed --format='value(status.url)')
+
+        # Deploy the API with AGENT_URL pointing at the agent service
+        gcloud run deploy kapitalwerk-api \
+          --image us-central1-docker.pkg.dev/$PROJECT_ID/kapitalwerk-nxt/api:latest \
+          --region us-central1 \
+          --platform managed \
+          --allow-unauthenticated \
+          --service-account "${_CLOUD_RUN_SERVICE_ACCOUNT}" \
+          --set-env-vars "CONFIG_FILE=/app/config.json,LLM_PROVIDER=gemini,GCP_PROJECT=$PROJECT_ID,GCP_LOCATION=${_GCP_LOCATION},BUCKET_BACKEND=gcs,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},AGENT_URL=$${AGENT_URL},GOVERNANCE_STORE=${_GOVERNANCE_STORE},CASE_ACTION_RESET_HOURS=${_CASE_ACTION_RESET_HOURS}" \
+          --set-secrets "GEMINI_API_KEY=${_GEMINI_SECRET_NAME}" \
+          --memory=1Gi \
+          --timeout=15m
+
+        # UI is served by the API service; no separate frontend deploy
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+

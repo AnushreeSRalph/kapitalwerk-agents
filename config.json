@@ -1,10 +1,10 @@
 {
-  "project_id": "hack-team-chasing-alpha",
+  "project_id": "project-5b1aefc0-3657-42da-8b7",
   "BUCKET_BACKEND": "gcs",
   "GCS_BUCKET_NAME": "kapitalwerk-nxt-gcs",
   "CSV_PATH": "gs://kapitalwerk-nxt-gcs/hospital_vendor_2yr_history.csv",
   "gcs_bucket": "kapitalwerk-nxt-gcs",
-  "llm_provider": "vertex",
+  "llm_provider": "gemini",
   "governance_store": "firestore",
 
   "_llm_provider_options": {

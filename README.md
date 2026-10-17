@@ -119,7 +119,7 @@ GCS_BUCKET_NAME=kapitalwerk-nxt-gcs
 LLM_PROVIDER=vertex
 GEMINI_MODEL=gemini-2.5-flash
 GOVERNANCE_STORE=firestore
-FIRESTORE_PROJECT=hack-team-chasing-alpha
+FIRESTORE_PROJECT=project-5b1aefc0-3657-42da-8b7
 ~~~
 
 FIRESTORE_DATABASE may be omitted. The application uses Firestore's default database automatically.

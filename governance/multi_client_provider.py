@@ -95,7 +95,7 @@ def get_llm_client(config: dict | None = None) -> "LLMClient":
 
     if provider == "gemini":
         return GeminiClient(
-            model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
+            model=os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite"),
         )
 
     if provider == "vertex":
