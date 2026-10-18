@@ -176,7 +176,7 @@
         <span class="font-mono text-[11px] text-emerald-400 font-semibold tracking-wide">multi-agent orchestrator live</span>
       </div>
       <span class="hidden md:inline text-slate-500">·</span>
-      <span class="hidden md:inline text-slate-400 font-mono text-[11px]">LangGraph · 6 Autonomous Nodes · Fail-Closed PII Shield Active</span>
+        <span class="hidden md:inline text-slate-400 font-mono text-[11px]">LangGraph · 7 Autonomous Nodes · Fail-Closed PII Shield Active</span>
     </div>
     <div class="flex items-center gap-4 text-[11px] font-mono">
       <span id="apiStatusBadge" class="flex items-center gap-1 text-emerald-400">
@@ -738,7 +738,7 @@
               </div>
               <h2 class="text-xl font-bold mt-2 text-white">Cross-Sell Intelligence Agent</h2>
               <p class="text-xs text-slate-300 max-w-xl mt-1 leading-relaxed">
-                Autonomous agent analyzing customer growth patterns without model hallucinations. Matches counterparty volume expansion against rule-based SME product lines (Factoring, Equipment Leasing, Kreditversicherung).
+                LLM-assisted agent analyzing customer growth patterns and generating evidence-based SME product recommendations from the latest snapshot.
               </p>
             </div>
           </div>
@@ -746,7 +746,7 @@
           <div class="bg-agentDark-900/80 p-4 rounded-xl border border-yellow-500/20 font-mono text-xs space-y-1.5 flex-shrink-0 w-full sm:w-auto">
             <div class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Agent Metadata</div>
             <div class="flex justify-between gap-4"><span class="text-slate-400">Node ID:</span> <span class="text-yellow-300 font-bold">marketing_node</span></div>
-            <div class="flex justify-between gap-4"><span class="text-slate-400">LLM Tokens Used:</span> <span class="text-emerald-400 font-bold">0 (Rule-Based)</span></div>
+            <div class="flex justify-between gap-4"><span class="text-slate-400">LLM Processing:</span> <span class="text-emerald-400 font-bold">Governed by middleware</span></div>
             <div class="flex justify-between gap-4"><span class="text-slate-400">Lead Destination:</span> <span class="text-white">RM Sia Mukherjee</span></div>
           </div>
         </div>
@@ -761,9 +761,9 @@
             <div class="flex items-center justify-between">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200 font-mono">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
-                Rule-Based Cross-Sell Opportunity
+                LLM-Generated Cross-Sell Opportunity
               </span>
-              <span class="text-xs font-mono text-slate-400">Zero Token Cost</span>
+              <span class="text-xs font-mono text-slate-400">Governance metered</span>
             </div>
 
             <h2 id="marketingPatternTitle" class="text-xl font-black text-slate-900 mt-3 tracking-tight">
@@ -894,7 +894,7 @@
               <div class="mt-5">
                 <span class="text-xs font-bold text-slate-800">Marketing Agent Recommendation</span>
                 <div id="heatDetailRec" class="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200 mt-1.5">
-                  Prioritize relationship manager outreach for medical equipment lines and trade credit insurance — regional clinic group is scaling capacity fast.
+                  No model narrative is available for the latest snapshot.
                 </div>
               </div>
             </div>
@@ -926,7 +926,7 @@
           </div>
           <span class="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            6 Nodes Operational
+            7 Nodes Operational
           </span>
         </div>
 
@@ -1363,7 +1363,7 @@
 
       <div class="bg-brand-50 p-4 rounded-xl border border-brand-200/80">
         <h4 class="font-bold text-brand-900">Direct Contact & Escalation</h4>
-        <p class="text-brand-800 mt-1">RM Sia oversees all high-value credit escalations and rule-based cross-sell lead memos.</p>
+        <p class="text-brand-800 mt-1">RM Sia oversees all high-value credit escalations and model-generated cross-sell lead memos.</p>
         <div class="mt-3 space-y-1 font-mono text-[11px] text-brand-900">
           <div>Email: sia.mukherjee@kapitalwerknxt.bank</div>
           <div>Desk: +49 (0) 69 910 44021</div>
@@ -2541,18 +2541,18 @@ class Component extends DCLogic {
     ];
     const reportTraceId = 'trc-rep-' + t.id;
 
-    // marketing agent — rule-based cross-sell signal for the active tenant
+    // legacy marketing signal for the unused pre-API component
     const marketingSignal = buildMarketingSignal(activeTenantId, t.name);
     const marketingKpis = [
       { label:'Growth signals detected', value:'1', sub:'this run', subColor:'#9B9A8F' },
-      { label:'Products matched', value:String(marketingSignal.products.length), sub:'rule-based catalog', subColor:'#2F6B4F' },
+      { label:'Products matched', value:String(marketingSignal.products.length), sub:'model recommendations', subColor:'#2F6B4F' },
       { label:'Leads routed to RM', value:'1', sub:'this run', subColor:'#9B9A8F' },
-      { label:'LLM calls used', value:'0', sub:'fully rule-based', subColor:'#2F6B4F' },
+      { label:'LLM calls used', value:'governed', sub:'see governance telemetry', subColor:'#2F6B4F' },
     ];
     const marketingStepsOpen = this.state.marketingStepsOpen;
     const marketingSteps = [
       { n:1, text:`Read the growth and deviation signals the Inflow and Risk agents already computed for ${t.name} — no new data access required.` },
-      { n:2, text:`Matched the detected pattern ("${marketingSignal.patternLabel}") against the rule-based product catalog — no LLM call made.` },
+      { n:2, text:`Sent the latest transaction aggregates to the governed Marketing Agent for evidence-based recommendations.` },
       { n:3, text:`Identified ${marketingSignal.products.length} matching product line(s): ${marketingSignal.products.map(p=>p.name).join(', ')}.` },
       { n:4, text:`Drafted a cross-sell lead memo summarizing the signal and matched products.` },
       { n:5, text:`Routed the memo to the relationship manager / sales team via the shared email-dispatch mechanism.` },
@@ -2685,7 +2685,7 @@ class Component extends DCLogic {
         accentColor: '#8A6A1F', accentSoft: '#F3ECD9',
         badgeText: 'CROSS-SELL LEAD', iconGlyph: '↑',
         headline: marketingSignal.patternLabel,
-        subheadline: `${t.name} · rule-based signal, no LLM used`,
+        subheadline: `${t.name} · model-backed signal from the latest snapshot`,
         greeting: `Hi team,`,
         bodyText: marketingSignal.detail,
         boxLabel: marketingSignal.metricLabel, boxAmount: marketingSignal.metricValue, boxSub: 'Detected this run',
@@ -2859,6 +2859,8 @@ class Component extends DCLogic {
         this.casesData = [];
         this.heatmapData = [];
         this.selectedHeatmapRegion = null;
+        this.pipelineInFlight = false;
+        this.refreshInFlight = false;
         
         // Dynamic API endpoint resolution
         // The agent service also serves this HTML, but it intentionally does
@@ -2920,9 +2922,19 @@ class Component extends DCLogic {
         this.apiBase = localDefault;
       }
 
+      async fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          return await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+
       async loadPersonas() {
         try {
-          const response = await fetch(this.apiBase + '/personas', { cache: 'no-store' });
+          const response = await this.fetchWithTimeout(this.apiBase + '/personas', { cache: 'no-store' });
           if (!response.ok) throw new Error('personas ' + response.status);
           const personas = await response.json();
           if (Array.isArray(personas) && personas.length) {
@@ -3000,7 +3012,7 @@ class Component extends DCLogic {
         this.casesData = [];
         this.heatmapData = [];
         try {
-          const response = await fetch(this.apiBase + '/' + persona + '/dashboard', { cache: 'no-store' });
+          const response = await this.fetchWithTimeout(this.apiBase + '/' + persona + '/dashboard', { cache: 'no-store' });
           if (!response.ok) throw new Error('dashboard ' + response.status);
           this.dashboardData = await response.json();
           this.counterpartyData = Array.isArray(this.dashboardData.top_counterparties) ? this.dashboardData.top_counterparties : [];
@@ -3554,8 +3566,8 @@ class Component extends DCLogic {
       async loadGovernance() {
         try {
           const [summaryResponse, logResponse] = await Promise.all([
-            fetch(`${this.apiBase}/governance/audit-summary`, { cache: 'no-store' }),
-            fetch(`${this.apiBase}/governance/audit-log?limit=50`, { cache: 'no-store' })
+            this.fetchWithTimeout(`${this.apiBase}/governance/audit-summary`, { cache: 'no-store' }),
+            this.fetchWithTimeout(`${this.apiBase}/governance/audit-log?limit=50`, { cache: 'no-store' })
           ]);
           if (!summaryResponse.ok) throw new Error('audit-summary ' + summaryResponse.status);
           if (!logResponse.ok) throw new Error('audit-log ' + logResponse.status);
@@ -3739,6 +3751,8 @@ class Component extends DCLogic {
 
       // Interactive LangChain Multi-Agent Swarm Execution
       async executePipelineRun() {
+        if (this.pipelineInFlight) return;
+        this.pipelineInFlight = true;
         const btn = document.getElementById('runPipelineExecuteBtn');
         const termLines = document.getElementById('pipelineTerminalLines');
         const termStatus = document.getElementById('terminalStatus');
@@ -3829,7 +3843,7 @@ class Component extends DCLogic {
           };
           const personaCfg = PERSONA_CONFIGS[this.activePersona] || PERSONA_CONFIGS['glucometer-vendor'];
 
-          const resp = await fetch(`${runBase}/api/run`, {
+          const resp = await this.fetchWithTimeout(`${runBase}/api/run`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -3920,22 +3934,66 @@ class Component extends DCLogic {
           supStatus.className = 'text-xs font-mono text-amber-400';
           this.showToast('Demo Mode', 'Connect to Kapitalwerk API for live pipeline execution.');
         } finally {
+          this.pipelineInFlight = false;
           btn.disabled = false;
+          // Leave the completed terminal text visible briefly, then return
+          // the supervisor canvas to its idle state for the next run.
+          setTimeout(() => this.resetPipelineVisuals(), 1800);
         }
 
-        setTimeout(() => { this.loadPersona(this.activePersona); }, 500);
+        await this.loadPersona(this.activePersona);
+      }
+
+      resetPipelineVisuals() {
+        const nodeIds = ['ing', 'inf', 'rsk', 'aml', 'rep', 'mkt', 'rem'];
+        const lineIds = ['line-ing', 'line-inf', 'line-rsk', 'line-aml', 'line-rep'];
+        nodeIds.forEach(id => {
+          const el = document.getElementById('worker-' + id);
+          if (el) {
+            el.style.opacity = '0.35';
+            el.style.transform = 'scale(1)';
+            el.style.filter = '';
+          }
+        });
+        lineIds.forEach(id => {
+          const line = document.getElementById(id);
+          if (line) {
+            line.setAttribute('stroke', '#1E293B');
+            line.classList.remove('circuit-pulse-active');
+          }
+        });
+        const termStatus = document.getElementById('terminalStatus');
+        const supStatus = document.getElementById('supStatusText');
+        if (termStatus && termStatus.textContent !== 'ERROR') {
+          termStatus.textContent = 'IDLE';
+          termStatus.className = 'text-slate-400 font-bold';
+        }
+        if (supStatus && !supStatus.textContent.startsWith('Error')) {
+          supStatus.textContent = 'Idle · Ready';
+          supStatus.className = 'text-xs font-mono text-slate-400';
+        }
       }
 
       async refreshCurrentPersona() {
+        if (this.refreshInFlight) return;
+        this.refreshInFlight = true;
         const icon = document.getElementById('refreshIcon');
         if (icon) icon.classList.add('animate-spin');
-        this.showToast('Refreshing...', 'Syncing latest ledger & governance records');
-        await this.loadPersona(this.activePersona);
-        await this.loadGovernance();
-        setTimeout(() => {
-          if (icon) icon.classList.remove('animate-spin');
+        try {
+          this.showToast('Refreshing...', 'Syncing latest ledger & governance records');
+          await Promise.all([
+            this.loadPersona(this.activePersona),
+            this.loadGovernance(),
+          ]);
           this.showToast('Data Synced', 'All views up to date.');
-        }, 600);
+        } finally {
+          // loadPersona() refreshes Lucide icons and can replace the original
+          // SVG node. Resolve it again so the visible icon, not a detached
+          // reference, stops spinning.
+          const currentIcon = document.getElementById('refreshIcon');
+          if (currentIcon) currentIcon.classList.remove('animate-spin');
+          this.refreshInFlight = false;
+        }
       }
 
       toggleReportSteps() {

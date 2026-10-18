@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import threading
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import date
 import httpx
@@ -200,10 +201,78 @@ async def _invoke_agent(payload: dict, route: str = "/run") -> dict:
     """
     agent_url = os.environ.get("AGENT_URL")
     if not agent_url:
-        raise RuntimeError("AGENT_URL environment variable is not set")
+        # Do not silently execute the agent graph inside the public API
+        # container on Cloud Run.  A missing AGENT_URL is a deployment
+        # misconfiguration and must fail visibly rather than causing a
+        # second pipeline/reminder run in the wrong service.
+        if os.environ.get("K_SERVICE") and os.environ.get("ALLOW_INPROCESS_AGENT", "").lower() not in ("1", "true", "yes"):
+            raise RuntimeError("AGENT_URL is required on Cloud Run; redeploy the API with the agent service URL")
+        # Local development normally runs only this FastAPI service. Cloud
+        # Run uses AGENT_URL to forward to the separate agent service, while
+        # local runs execute the same graph in-process so the UI's Run Pipeline
+        # button does not fail with a misleading HTTP 500.
+        if route == "/run-all":
+            from orchestrator.run_orchestrator import run_all_personas
+            # Never force a rerun implicitly.  In production, a missing
+            # AGENT_URL must not turn a UI request into duplicate reminder
+            # emails; callers can opt in explicitly with FORCE_RUN=1.
+            force_run = str(
+                payload.get("force")
+                or payload.get("force_run")
+                or os.environ.get("FORCE_RUN", "")
+            ).lower() in ("1", "true", "yes")
+            await asyncio.to_thread(
+                run_all_personas,
+                run_date=payload.get("run_date") or payload.get("runDate"),
+                force=force_run,
+                reminder_recipient_override=payload.get("reminder_recipient_override"),
+                verbose=True,
+            )
+            return {"success": True, "run_all_personas": True, "llm_provider": os.environ.get("LLM_PROVIDER", "ollama")}
+
+        from app import get_agent_run_log, reset_agent_run_log, run_pipeline
+
+        defaults = {
+            "glucometer-vendor": ("hospital_vendor", "ingestion_data/hospital_vendor_2yr_history.csv", "MedSupply Direct"),
+            "gym-chain": ("membership_club", "ingestion_data/gym_membership_2yr_history.csv", "FitCore Gyms"),
+            "boho-house": ("membership_club", "ingestion_data/boho_house_2yr_history.csv", "Boho House"),
+        }
+        customer_id = payload.get("customer_id") or payload.get("customerId") or "glucometer-vendor"
+        source_type, csv_path, tenant_name = defaults.get(customer_id, defaults["glucometer-vendor"])
+        state = {
+            "customer_id": customer_id,
+            "source_type": payload.get("source_type") or payload.get("sourceType") or source_type,
+            "csv_path": payload.get("csv_path") or payload.get("csvPath") or csv_path,
+            "tenant_name": payload.get("tenant_name") or payload.get("tenantName") or tenant_name,
+        }
+        run_date = payload.get("run_date") or payload.get("runDate")
+        if run_date:
+            state["run_date"] = run_date
+        reset_agent_run_log()
+        result = await asyncio.to_thread(run_pipeline, state)
+        return {
+            "success": True,
+            "pipeline_status": "completed",
+            "llm_provider": os.environ.get("LLM_PROVIDER", "ollama"),
+            "agent_runs": get_agent_run_log(),
+            "terminal_lines": [],
+            "result": {
+                "risk_score": result.get("risk_score"),
+                "risk_reasons": result.get("risk_reasons", []),
+                "report_text": result.get("report_text"),
+                "aml_cases_count": len(result.get("aml_cases") or []),
+                "marketing_summary": result.get("marketing_summary"),
+                "reminders_queued": result.get("reminders_queued", []),
+                "pii_blocked": result.get("pii_blocked", False),
+                "top_risk_report": result.get("top_risk_report"),
+            },
+        }
 
     url = agent_url.rstrip("/") + route
-    async with httpx.AsyncClient(timeout=60.0) as client:
+    # A full pipeline (especially AML/Vertex calls) can legitimately exceed
+    # one minute.  Cloud Run is configured for 15 minutes, so do not make the
+    # API proxy fail at 60 seconds while the agent is still working.
+    async with httpx.AsyncClient(timeout=900.0) as client:
         resp = await client.post(url, json=payload)
     resp.raise_for_status()
     return resp.json()
