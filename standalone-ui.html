@@ -567,29 +567,29 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Customer Notices Sent</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
-          <span class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1">
+          <div id="reportCustomerNotices" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
+          <span id="reportCustomerNoticesSub" class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1">
             <i data-lucide="check" class="w-3.5 h-3.5 text-slate-400"></i> No snapshot loaded
           </span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Upcoming Payment Heads-Up</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
-          <span class="text-[11px] font-semibold text-emerald-600 mt-1 flex items-center gap-1 font-mono">
+          <div id="reportUpcoming" class="text-2xl font-black font-mono text-slate-900 mt-1">—</div>
+          <span id="reportUpcomingSub" class="text-[11px] font-semibold text-emerald-600 mt-1 flex items-center gap-1 font-mono">
             <i data-lucide="calendar" class="w-3.5 h-3.5"></i> No snapshot loaded
           </span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Missed-Credit Reminders</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1 text-slate-500">—</div>
-          <span class="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 font-mono">
+          <div id="reportMissed" class="text-2xl font-black font-mono text-slate-900 mt-1 text-slate-500">—</div>
+          <span id="reportMissedSub" class="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 font-mono">
             <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> No snapshot loaded
           </span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Treasury Ops Summary</span>
-          <div class="text-2xl font-black font-mono text-slate-900 mt-1 text-slate-500">—</div>
-          <span class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1 font-mono">
+          <div id="reportRollups" class="text-2xl font-black font-mono text-slate-900 mt-1 text-slate-500">—</div>
+          <span id="reportRollupsSub" class="text-[11px] font-semibold text-slate-500 mt-1 flex items-center gap-1 font-mono">
             <i data-lucide="file-text" class="w-3.5 h-3.5"></i> No snapshot loaded
           </span>
         </div>
@@ -1891,8 +1891,9 @@ const CASES_SEED = [
   {id:'1011', kind:'high_value', narrative:"Nuremberg Medical Center posted two high-value transactions this period, most recently €16,016.10 &mdash; 2.05x its €7,806.56 baseline.", trace:'trc-000106'},
 ];
 
-// Marketing Agent — rule-based cross-sell matching, no LLM call. Reads growth/deviation
-// signals the Inflow and Risk agents already compute; does not request new data access.
+// Legacy marketing view data retained only for the unused pre-API component.
+// The mounted ModernApp below renders recommendations exclusively from
+// dashboard.marketing.products returned by the backend Marketing Agent.
 const MARKETING_SIGNALS = {
   'glucometer-vendor': {
     patternLabel: 'Hospital inflow growth — rising receivables exposure',
@@ -1903,10 +1904,7 @@ const MARKETING_SIGNALS = {
       { name: "Munich Medical Center", growthPct: 26, barPct: 93 },
       { name: "Bonn University Hospital", growthPct: 25, barPct: 89 },
     ],
-    products: [
-      { name: 'Trade credit insurance (Kreditversicherung)', rationale: "Covers exactly this risk — a vendor's exposure to a counterparty delaying or defaulting on invoiced payments. Standard EU providers (Allianz Trade, Coface, Atradius) price this directly off invoice volume and concentration, both of which are rising here." },
-      { name: 'Invoice factoring / receivables financing', rationale: "Rising receivables volume ties up more of MedSupply Direct's working capital in outstanding invoices; factoring converts that into immediate cash flow rather than waiting out each hospital's payment cycle." },
-    ],
+    products: [],
   },
   'gym-chain': {
     patternLabel: 'Membership & location growth',
@@ -1918,10 +1916,7 @@ const MARKETING_SIGNALS = {
       { name: "Q3", growthPct: 13, barPct: 93 },
       { name: "Q4", growthPct: 14, barPct: 100 },
     ],
-    products: [
-      { name: 'Equipment financing', rationale: "New and expanding locations require new fitness equipment on a predictable cycle — a financing need tied directly to the location-growth signal, not a cold outreach." },
-      { name: 'Business liability insurance (per-location)', rationale: "Each new location adds a distinct liability exposure (member injury, property) that should be underwritten independently as the chain scales past its original footprint." },
-    ],
+    products: [],
   },
   'boho-house': {
     patternLabel: 'Invite only club',
@@ -1933,10 +1928,7 @@ const MARKETING_SIGNALS = {
       { name: "Q3", growthPct: 8, barPct: 89 },
       { name: "Q4", growthPct: 9, barPct: 100 },
     ],
-    products: [
-      { name: 'Expansion financing', rationale: "Adding properties to the portfolio is capital-intensive; financing underwritten against a proven occupancy and inflow pattern is lower-risk for the bank than a standard cold-book loan." },
-      { name: 'Treasury & cash management', rationale: "More properties means more complexity pooling and forecasting rental inflows across the portfolio — a natural cross-sell into treasury services as multi-property complexity increases." },
-    ],
+    products: [],
   },
 };
 function buildMarketingSignal(tenantId, tenantName){
@@ -3419,6 +3411,17 @@ class Component extends DCLogic {
       }
 
       renderReports() {
+        const reporting = (this.dashboardData && this.dashboardData.reporting) || null;
+        const hasSnapshot = Boolean(this.dashboardData && this.dashboardData.run_date && reporting);
+        const setReport = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+        setReport('reportCustomerNotices', hasSnapshot ? String(reporting.customer_notices || 0) : '—');
+        setReport('reportUpcoming', hasSnapshot ? String(reporting.upcoming_accounts || 0) : '—');
+        setReport('reportMissed', hasSnapshot ? String(reporting.missed_reminders || 0) : '—');
+        setReport('reportRollups', hasSnapshot ? String(reporting.rollup_memos || 0) : '—');
+        setReport('reportCustomerNoticesSub', hasSnapshot ? 'Latest completed snapshot' : 'No snapshot loaded');
+        setReport('reportUpcomingSub', hasSnapshot ? 'Upcoming payment notices' : 'No snapshot loaded');
+        setReport('reportMissedSub', hasSnapshot ? 'Missed-credit reminders' : 'No snapshot loaded');
+        setReport('reportRollupsSub', hasSnapshot ? 'Treasury Ops summary' : 'No snapshot loaded');
         const tbody = document.getElementById('treasuryTableBody');
         if (!tbody) return;
         tbody.innerHTML = this.counterpartyData.slice(0, 10).map(c => `

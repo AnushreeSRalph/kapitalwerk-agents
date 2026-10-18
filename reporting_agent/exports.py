@@ -395,6 +395,17 @@ persisted marketing_heatmap.json).
     return _load(path).get("heatmap", [])
 
 
+def marketing_recommendations(bucket_root: str, persona: str, run_date: str | None = None) -> list[dict]:
+    """Model-generated product recommendations persisted by Marketing Agent."""
+    run_date = _resolve(bucket_root, persona, run_date)
+    if not run_date:
+        return []
+    path = _join(bucket_root, persona, run_date, "marketing_heatmap.json")
+    if not _exists(path):
+        return []
+    return _load(path).get("recommendations", []) or []
+
+
 def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
               audit_path: str | None = None) -> dict:
     """Everything a per-persona overview screen needs, in one call.
@@ -412,6 +423,7 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
     counterparties = top_counterparties(bucket_root, persona, run_date, limit=100000)
     cases = cases_awaiting_review(bucket_root, persona, run_date, limit=100000)
     heatmap = marketing_heatmap(bucket_root, persona, run_date)
+    recommendations = marketing_recommendations(bucket_root, persona, run_date)
     overdue = [row for row in counterparties if row.get("overdue", 0) > 0]
     metrics = {
         "total_accounts": len(counterparties),
@@ -444,27 +456,10 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
     # narratives and remains available while a new pipeline run is processing.
     opportunities = sorted(heatmap, key=lambda item: float(item.get("total_value") or 0), reverse=True)
     top = opportunities[0] if opportunities else {}
-    products = []
-    if top:
-        region = top.get("city") or top.get("postal_code") or "the leading region"
-        volume = round(float(top.get("total_value") or 0), 2)
-        products.append({
-            "name": "Working-capital facility",
-            "rationale": f"Latest activity in {region} totals EUR {volume:,.2f}; assess a facility sized to the observed inflow pattern.",
-        })
-        if any(row.get("riskTier") == "high" for row in counterparties) or overdue:
-            products.append({
-                "name": "Trade credit insurance",
-                "rationale": "Live ledger data shows overdue or high-risk counterparties; protect receivables while exposure is reviewed.",
-            })
-        products.append({
-            "name": "Invoice factoring",
-            "rationale": f"Use the {region} inflow concentration as a candidate for faster receivables conversion.",
-        })
     marketing = {
         "pattern_label": "Regional inflow opportunity" if top else "No opportunity signal available",
         "detail": (top.get("narrative") or "No marketing narrative was persisted for the latest snapshot."),
-        "products": products,
+        "products": recommendations,
         "top_region": top.get("city") or top.get("postal_code"),
         "top_region_metric": round(float(top.get("total_value") or 0), 2) if top else 0,
         "network_count": len(heatmap),

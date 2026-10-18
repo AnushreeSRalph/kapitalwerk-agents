@@ -82,7 +82,12 @@ def build_prompt(aggregates: list[dict]) -> str:
         "'watch' = low or thin activity worth monitoring; 'stable' = steady, no action needed.\n\n"
         f"POSTAL-CODE ACTIVITY\n{lines}\n\n"
         "Respond with one line per postal code in EXACTLY this format:\n"
-        "POSTAL <postal_code>: <label> | <narrative sentence>"
+        "POSTAL <postal_code>: <label> | <narrative sentence>\n\n"
+        "Then provide up to three evidence-based banking product recommendations. "
+        "Use only the aggregated activity above; do not invent customer facts. "
+        "Respond with one line per recommendation in EXACTLY this format:\n"
+        "RECOMMENDATION: <product name> | <one-sentence rationale>\n"
+        "If the data does not support a recommendation, output no RECOMMENDATION lines."
     )
 
 
@@ -121,6 +126,21 @@ only lines matching the requested shape are picked up; anything else is
     return out
 
 
+def parse_recommendations(text: str) -> list[dict[str, str]]:
+    """Parse model-generated product recommendations from the strict output format."""
+    out: list[dict[str, str]] = []
+    for line in text.splitlines():
+        m = re.match(r"\s*RECOMMENDATION\s*:\s*(.+?)\s*\|\s*(.+)", line, re.IGNORECASE)
+        if not m:
+            continue
+        name, rationale = m.group(1).strip(), m.group(2).strip()
+        if name and rationale:
+            out.append({"name": name, "rationale": rationale})
+        if len(out) >= 3:
+            break
+    return out
+
+
 class MarketingAgent:
     def __init__(self, governance):
         self.governance = governance
@@ -129,7 +149,7 @@ class MarketingAgent:
                pii_blocked: bool = False) -> dict:
         aggregates = aggregate_by_postal(transactions)
         if not aggregates:
-            return {"heatmap": [], "llm_available": False, "parse_failed": False,
+            return {"heatmap": [], "recommendations": [], "llm_available": False, "parse_failed": False,
                     "trace_id": None, "pii_blocked": pii_blocked}
 
         if pii_blocked:
@@ -151,11 +171,12 @@ class MarketingAgent:
                 {**agg, **dict(zip(("label", "narrative"), _fallback_annotation(agg, aggregates)))}
                 for agg in aggregates
             ]
-            return {"heatmap": heatmap, "llm_available": False, "parse_failed": False,
+            return {"heatmap": heatmap, "recommendations": [], "llm_available": False, "parse_failed": False,
                     "trace_id": None, "pii_blocked": True}
 
         prompt = build_prompt(aggregates)
         annotations: dict[str, tuple[str, str]] = {}
+        recommendations: list[dict[str, str]] = []
         llm_available = True
         parse_failed = False
         trace_id = None
@@ -168,6 +189,7 @@ class MarketingAgent:
             print("=" * 80)
             trace_id = record.trace_id
             annotations = parse_annotations(response_text)
+            recommendations = parse_recommendations(response_text)
             print(f"[marketing_agent] annotations: {annotations}")
             parse_failed = len(annotations) == 0
             print(f"[marketing_agent] parse_failed: {parse_failed} ")
@@ -188,7 +210,7 @@ class MarketingAgent:
                 label, narrative = _fallback_annotation(agg, aggregates)
             heatmap.append({**agg, "label": label, "narrative": narrative})
 
-        return {"heatmap": heatmap, "llm_available": llm_available,
+        return {"heatmap": heatmap, "recommendations": recommendations, "llm_available": llm_available,
                 "parse_failed": parse_failed, "trace_id": trace_id,
                 "pii_blocked": False}
 
@@ -197,6 +219,29 @@ class MarketingAgent:
         """Read the run's normalized transactions from the bucket, build the
 annotated heatmap, and persist it. Returns a small summary.
 """
+
+        # Keep the agent convenient for local callers/tests that pass a bucket
+        # root, while production passes the LocalBucket/GCSBucket abstraction.
+        if isinstance(bucket, (str, os.PathLike)):
+            # Do not import ``ingestion_agent.storage`` here: local test and
+            # script layouts expose ingestion_agent both as a module and as a
+            # package.  This tiny adapter keeps the marketing agent independent
+            # of that layout while preserving the bucket interface.
+            root = os.fspath(bucket)
+
+            class _LocalBucket:
+                def read_json(self, blob_path):
+                    with open(os.path.join(root, blob_path), encoding="utf-8") as handle:
+                        return json.load(handle)
+
+                def write_json(self, blob_path, data):
+                    path = os.path.join(root, blob_path)
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "w", encoding="utf-8") as handle:
+                        json.dump(data, handle, indent=2, default=str)
+                    return path
+
+            bucket = _LocalBucket()
 
         prefix = f"{customer_id}/{run_date}"
         try:
@@ -214,6 +259,7 @@ annotated heatmap, and persist it. Returns a small summary.
             "postal_code_count": len(result["heatmap"]),
             "llm_available": result["llm_available"],
             "pii_blocked": result.get("pii_blocked", False),
+            "recommendations": result.get("recommendations", []),
             "heatmap": result["heatmap"],
         })
 

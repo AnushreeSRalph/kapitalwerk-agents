@@ -27,7 +27,7 @@ PERSONA_OWNERS = {
 # Display name used in the email body/footer; callers may override per run.
 PERSONA_TENANTS = {
     "glucometer-vendor": "MedSupply Direct",
-    "gym-chain": "Gym Chain",
+    "gym-chain": "FitCore Gym",
     "boho-house": "Boho House Club",
 }
 
