@@ -424,6 +424,11 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
     cases = cases_awaiting_review(bucket_root, persona, run_date, limit=100000)
     heatmap = marketing_heatmap(bucket_root, persona, run_date)
     recommendations = marketing_recommendations(bucket_root, persona, run_date)
+    marketing_artifact = {}
+    if run_date:
+        marketing_path = _join(bucket_root, persona, run_date, "marketing_heatmap.json")
+        if _exists(marketing_path):
+            marketing_artifact = _load(marketing_path) or {}
     overdue = [row for row in counterparties if row.get("overdue", 0) > 0]
     metrics = {
         "total_accounts": len(counterparties),
@@ -460,6 +465,9 @@ def dashboard(bucket_root: str, persona: str, today: date | str | None = None,
         "pattern_label": "Regional inflow opportunity" if top else "No opportunity signal available",
         "detail": (top.get("narrative") or "No marketing narrative was persisted for the latest snapshot."),
         "products": recommendations,
+        "llm_available": bool(marketing_artifact.get("llm_available", False)),
+        "pii_blocked": bool(marketing_artifact.get("pii_blocked", False)),
+        "parse_failed": bool(marketing_artifact.get("parse_failed", False)),
         "top_region": top.get("city") or top.get("postal_code"),
         "top_region_metric": round(float(top.get("total_value") or 0), 2) if top else 0,
         "network_count": len(heatmap),

@@ -259,6 +259,7 @@ annotated heatmap, and persist it. Returns a small summary.
             "postal_code_count": len(result["heatmap"]),
             "llm_available": result["llm_available"],
             "pii_blocked": result.get("pii_blocked", False),
+            "parse_failed": result.get("parse_failed", False),
             "recommendations": result.get("recommendations", []),
             "heatmap": result["heatmap"],
         })

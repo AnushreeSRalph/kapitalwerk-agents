@@ -761,7 +761,7 @@
             <div class="flex items-center justify-between">
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200 font-mono">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i>
-                LLM-Generated Cross-Sell Opportunity
+                <span id="marketingOpportunityBadge">Data-backed Cross-Sell Opportunity</span>
               </span>
               <span class="text-xs font-mono text-slate-400">Governance metered</span>
             </div>
@@ -2143,6 +2143,10 @@ function buildCleanTenant(count, names, cadence){
 const API_BASE = '/api';
 // Public URL of this UI's own Cloud Run deployment (kapitalwerk-ui service -- see DEPLOY_CLOUDRUN.md).
 const API_TIMEOUT_MS = 10000;
+// Pipeline execution includes ingestion, Vertex/Ollama calls, AML narratives,
+// reporting, marketing, and reminder exports. It can take longer than the
+// short read-request timeout without being unavailable.
+const PIPELINE_TIMEOUT_MS = 900000;
 async function fetchWithTimeout(path, opts){
   const controller = new AbortController();
   const timer = setTimeout(function(){ controller.abort(); }, API_TIMEOUT_MS);
@@ -3481,10 +3485,20 @@ class Component extends DCLogic {
         const marketing = (this.dashboardData && this.dashboardData.marketing) || {};
         const title = document.getElementById('marketingPatternTitle');
         const detail = document.getElementById('marketingPatternDetail');
+        const badge = document.getElementById('marketingOpportunityBadge');
         if (title) title.textContent = marketing.pattern_label || 'No marketing signal available';
         if (detail) detail.textContent = marketing.detail || 'No marketing narrative was persisted for the latest snapshot.';
         const products = document.getElementById('marketingProductsList');
         const list = Array.isArray(marketing.products) ? marketing.products : [];
+        if (badge) {
+          badge.textContent = list.length && marketing.llm_available
+            ? 'LLM-Generated Cross-Sell Opportunity'
+            : marketing.pii_blocked
+              ? 'Deterministic Opportunity · LLM blocked by PII guardrail'
+              : marketing.parse_failed
+                ? 'LLM Analysis · No recommendation parsed'
+                : 'Data-backed Cross-Sell Opportunity';
+        }
         if (products) products.innerHTML = list.length
           ? list.map(p => '<div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200"><div class="font-bold text-slate-900">' + (p.name || 'Product signal') + '</div><div class="text-xs text-slate-600 mt-1 leading-relaxed">' + (p.rationale || '') + '</div></div>').join('')
           : '<div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">No product recommendations in the latest snapshot.</div>';
@@ -3851,7 +3865,7 @@ class Component extends DCLogic {
               source_type: personaCfg.source_type,
               csv_path: personaCfg.csv_path,
             }),
-          });
+          }, PIPELINE_TIMEOUT_MS);
 
           const data = await resp.json().catch(() => null);
 
